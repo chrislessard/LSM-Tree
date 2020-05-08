@@ -16,8 +16,8 @@ class TestDatabase(unittest.TestCase):
     def test_db_set_stores_pair(self):
         db = database.Database(FILENAME)
         
-        db.db_set(1, 'test1')
-        db.db_set(2, 'test2')
+        db.db_set('1', 'test1')
+        db.db_set('2', 'test2')
 
         with open(FILENAME, 'r') as s:
             line1 = s.readline().strip()
@@ -29,24 +29,24 @@ class TestDatabase(unittest.TestCase):
     def test_db_set_stores_index(self):
         db = database.Database(FILENAME)
         
-        db.db_set(1, 'test1')
-        db.db_set(2, 'test2')
+        db.db_set('1', 'test1')
+        db.db_set('2', 'test2')
 
-        self.assertEqual(db.index[1], 0)
-        self.assertEqual(db.index[2], 8)
+        self.assertEqual(db.index['1'], 0)
+        self.assertEqual(db.index['2'], 8)
 
     def test_db_set_index_retrieves_correct_value(self):
         db = database.Database(FILENAME)
         
-        db.db_set(1, 'test1')
-        db.db_set(2, 'test2')
-        db.db_set(3, 'test3')
-        db.db_set(4, 'test4')
+        db.db_set('1', 'test1')
+        db.db_set('2', 'test2')
+        db.db_set('3', 'test3')
+        db.db_set('4', 'test4')
 
         with open(FILENAME, 'r') as s:
-            s.seek(db.index[2])
+            s.seek(db.index['2'])
             self.assertEqual(s.readline(), '2,test2\n')
-            s.seek(db.index[4])
+            s.seek(db.index['4'])
             self.assertEqual(s.readline(), '4,test4\n')
 
 
@@ -58,9 +58,9 @@ class TestDatabase(unittest.TestCase):
 
         db = database.Database(FILENAME)
 
-        self.assertEqual(db.db_get(1), 'test1')
-        self.assertEqual(db.db_get(2), 'test2')
-        self.assertEqual(db.db_get(3), None)
+        self.assertEqual(db.db_get('1'), 'test1')
+        self.assertEqual(db.db_get('2'), 'test2')
+        self.assertEqual(db.db_get('3'), None)
     
     def test_db_get_retrieve_most_recent_val(self):
         with open(FILENAME, 'w') as s:
@@ -69,7 +69,7 @@ class TestDatabase(unittest.TestCase):
             s.write('1,new value\n')
         
         db = database.Database(FILENAME)
-        self.assertEqual(db.db_get(1), 'new value')
+        self.assertEqual(db.db_get('1'), 'new value')
 
 if __name__ == '__main__':
     unittest.main()

@@ -12,7 +12,7 @@ class Database():
         self.index = {}
 
     def db_set(self, key, value):
-        ''' (self, int, string) => None
+        ''' (self, str, str) => None
         Stores a new key value pair in the DB
         '''
         log = str(key) + ',' + (value) + '\n'
@@ -22,7 +22,7 @@ class Database():
             s.write(log)
 
     def db_get(self, key):
-        ''' (self, int) => None
+        ''' (self, str) => None
         Retrieve the value associated with key in the db
         '''
         offset = self.is_indexed(key)
@@ -36,7 +36,7 @@ class Database():
             else:
                 for line in s:
                     k, v = line.split(',')
-                    if int(k) == key:
+                    if k == key:
                         val = v.strip()
         return val
 
