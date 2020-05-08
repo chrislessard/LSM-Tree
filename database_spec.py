@@ -5,6 +5,13 @@ import database as database
 FILENAME = 'test_file.bin'
 
 class TestDatabase(unittest.TestCase):
+    def setUp(self):
+        file = open(FILENAME, 'w')
+        file.close()
+
+    def tearDown(self):
+        os.remove(FILENAME)
+
     # db_set
     def test_db_set_stores_pair(self):
         db = database.Database(FILENAME)
@@ -12,15 +19,13 @@ class TestDatabase(unittest.TestCase):
         db.db_set(1, 'test1')
         db.db_set(2, 'test2')
 
-        stream = open('testFile', 'rb')
-        line1 = stream.readline()
-        line2 = stream.readline()
+        stream = open(FILENAME, 'r')
+        line1 = stream.readline().strip()
+        line2 = stream.readline().strip()
 
-        self.assertEqual(line1, '1: test1')
-        self.assertEqual(line1, '2: test2')
+        self.assertEqual(line1, '1,test1')
+        self.assertEqual(line2, '2,test2')
         stream.close
-
-        os.remove(FILENAME)
 
     # db_get
     def test_db_get_retrieve_val(self):
@@ -31,8 +36,6 @@ class TestDatabase(unittest.TestCase):
 
         self.assertEqual(db.db_get(1), 'test1')
         self.assertEqual(db.db_get(2), 'test2')
-
-        os.remove(FILENAME)
 
 if __name__ == '__main__':
     unittest.main()

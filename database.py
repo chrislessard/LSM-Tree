@@ -1,17 +1,20 @@
 FILENAME = 'database.bin'
 
 class Database():
-    database_name = None
+    db_name = None
 
     def __init__(self, database_name):
-        self.database_name = database_name
+        self.db_name = database_name
 
     def db_set(self, key, value):
         '''
         Stores a new key value pair in the DB
         '''
+        stream = open(self.db_name, 'a')
+        log = str(key) + ',' + (value) + '\n'
+        stream.write(log)
 
-        pass
+        stream.close
 
     def db_get(self, key):
         '''
