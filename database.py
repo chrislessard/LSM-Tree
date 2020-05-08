@@ -10,17 +10,24 @@ class Database():
         '''
         Stores a new key value pair in the DB
         '''
-        stream = open(self.db_name, 'a')
         log = str(key) + ',' + (value) + '\n'
-        stream.write(log)
 
-        stream.close
+        stream = open(self.db_name, 'a')
+        stream.write(log)
+        stream.close()
 
     def db_get(self, key):
         '''
         Retrieve the value associated with key in the db
         '''
-        pass
+        stream = open(self.db_name, 'r')
+        for line in stream:
+            k, v = line.split(',')
+            if int(k) == key:
+                stream.close()
+                return v.strip()
+
+        stream.close()
 
 def main():
     '''

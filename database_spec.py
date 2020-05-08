@@ -6,8 +6,7 @@ FILENAME = 'test_file.bin'
 
 class TestDatabase(unittest.TestCase):
     def setUp(self):
-        file = open(FILENAME, 'w')
-        file.close()
+        pass
 
     def tearDown(self):
         os.remove(FILENAME)
@@ -29,13 +28,16 @@ class TestDatabase(unittest.TestCase):
 
     # db_get
     def test_db_get_retrieve_val(self):
-        db = database.Database(FILENAME)
+        s = open(FILENAME, 'w')
+        s.write('1,test1\n')
+        s.write('2,test2\n')
+        s.close()
 
-        db.db_set(1, 'test1')
-        db.db_set(2, 'test2')
+        db = database.Database(FILENAME)
 
         self.assertEqual(db.db_get(1), 'test1')
         self.assertEqual(db.db_get(2), 'test2')
+        self.assertEqual(db.db_get(3), None)
 
 if __name__ == '__main__':
     unittest.main()
