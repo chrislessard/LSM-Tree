@@ -11,23 +11,18 @@ class Database():
         Stores a new key value pair in the DB
         '''
         log = str(key) + ',' + (value) + '\n'
-
-        stream = open(self.db_name, 'a')
-        stream.write(log)
-        stream.close()
+        with open(self.db_name, 'a') as s:
+            s.write(log)
 
     def db_get(self, key):
         '''
         Retrieve the value associated with key in the db
         '''
-        stream = open(self.db_name, 'r')
-        for line in stream:
-            k, v = line.split(',')
-            if int(k) == key:
-                stream.close()
-                return v.strip()
-
-        stream.close()
+        with open(self.db_name, 'r') as s:
+            for line in s:
+                k, v = line.split(',')
+                if int(k) == key:
+                    return v.strip()
 
 def main():
     '''

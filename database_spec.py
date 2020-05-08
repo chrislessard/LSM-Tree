@@ -18,20 +18,18 @@ class TestDatabase(unittest.TestCase):
         db.db_set(1, 'test1')
         db.db_set(2, 'test2')
 
-        stream = open(FILENAME, 'r')
-        line1 = stream.readline().strip()
-        line2 = stream.readline().strip()
+        with open(FILENAME, 'r') as s:
+            line1 = s.readline().strip()
+            line2 = s.readline().strip()
 
         self.assertEqual(line1, '1,test1')
         self.assertEqual(line2, '2,test2')
-        stream.close
 
     # db_get
     def test_db_get_retrieve_val(self):
-        s = open(FILENAME, 'w')
-        s.write('1,test1\n')
-        s.write('2,test2\n')
-        s.close()
+        with open(FILENAME, 'w') as s:
+            s.write('1,test1\n')
+            s.write('2,test2\n')
 
         db = database.Database(FILENAME)
 
