@@ -61,6 +61,15 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.db_get(1), 'test1')
         self.assertEqual(db.db_get(2), 'test2')
         self.assertEqual(db.db_get(3), None)
+    
+    def test_db_get_retrieve_most_recent_val(self):
+        with open(FILENAME, 'w') as s:
+            s.write('1,test1\n')
+            s.write('2,test2\n')
+            s.write('1,new value\n')
+        
+        db = database.Database(FILENAME)
+        self.assertEqual(db.db_get(1), 'new value')
 
 if __name__ == '__main__':
     unittest.main()

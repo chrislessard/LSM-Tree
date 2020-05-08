@@ -27,16 +27,18 @@ class Database():
         '''
         offset = self.is_indexed(key)
 
+        val = None
         with open(self.db_name, 'r') as s:
             if offset:
                 s.seek(offset)
                 k, v = line.split(',')
-                return v
+                val = v
             else:
                 for line in s:
                     k, v = line.split(',')
                     if int(k) == key:
-                        return v.strip()
+                        val = v.strip()
+        return val
 
     def is_indexed(self, key):
         ''' (self, int) => Bool
