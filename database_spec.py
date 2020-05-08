@@ -9,7 +9,8 @@ class TestDatabase(unittest.TestCase):
         pass
 
     def tearDown(self):
-        os.remove(FILENAME)
+        if os.path.exists(FILENAME):
+            os.remove(FILENAME)
 
     # db_set
     def test_db_set_stores_pair(self):
@@ -24,6 +25,30 @@ class TestDatabase(unittest.TestCase):
 
         self.assertEqual(line1, '1,test1')
         self.assertEqual(line2, '2,test2')
+
+    def test_db_set_stores_index(self):
+        db = database.Database(FILENAME)
+        
+        db.db_set(1, 'test1')
+        db.db_set(2, 'test2')
+
+        self.assertEqual(db.index[1], 0)
+        self.assertEqual(db.index[2], 8)
+
+    def test_db_set_index_retrieves_correct_value(self):
+        db = database.Database(FILENAME)
+        
+        db.db_set(1, 'test1')
+        db.db_set(2, 'test2')
+        db.db_set(3, 'test3')
+        db.db_set(4, 'test4')
+
+        with open(FILENAME, 'r') as s:
+            s.seek(db.index[2])
+            self.assertEqual(s.readline(), '2,test2\n')
+            s.seek(db.index[4])
+            self.assertEqual(s.readline(), '4,test4\n')
+
 
     # db_get
     def test_db_get_retrieve_val(self):
