@@ -77,8 +77,9 @@ def main():
         'Please select an option: ',
         'store {key} {data}',
         'get {key}',
-        'save_index {filename}',
-        'load_index {filename}',
+        'load_index',
+        'save_index_snapshot {filename}',
+        'load_index_snapshot {filename}',
         'exit'
     ]
 
@@ -94,10 +95,12 @@ def main():
         elif cmd[0] == 'get':
             key = cmd[1]
             db.db_get(key)
-        elif cmd[0] == 'save_index':
+        elif cmd[0] == 'load_index':
+            db.load_index()
+        elif cmd[0] == 'save_index_snapshot':
             name = cmd[1]
             db.save_index_snapshot(name)
-        elif cmd[0] == 'load_index':
+        elif cmd[0] == 'load_index_snapshot':
             name = cmd[1]
             db.load_index_snapshot(name)
         elif cmd[0] == 'exit':
