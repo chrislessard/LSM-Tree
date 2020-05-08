@@ -1,25 +1,48 @@
 from pathlib import Path
 import pickle
 
-FILENAME = 'database.bin'
+FILENAME = 'database-1'
 
 class Database():
-    db_name = None
+    current_segment = None
+    current_segment_size = None
+    segments = None
+    threshold = None
     index = None
 
     def __init__(self, database_name):
-        self.db_name = database_name
+        self.current_segment = database_name
         self.index = {}
+        self.segments = [self.current_segment]
+        self.current_segment_size = 0
+        self.threshold = 100000
 
     def db_set(self, key, value):
         ''' (self, str, str) => None
         Stores a new key value pair in the DB
         '''
         log = str(key) + ',' + (value) + '\n'
-        with open(self.db_name, 'a') as s:
-            offset = Path(self.db_name).stat().st_size
+
+        # Check if we need a new segment
+        log_size = len(log)
+        if self.current_segment_size + log_size > self.threshold:
+            new_seg_name = self.new_segment_name()
+            self.current_segment = new_seg_name
+            self.current_segment_size = 0
+            self.segments.append(self.current_segment)
+
+        with open(self.current_segment, 'a') as s:
+            offset = Path(self.current_segment).stat().st_size
             self.index[key] = offset
             s.write(log)
+        
+        self.current_segment_size += log_size
+
+    def new_segment_name(self):
+        name, number = self.current_segment.split('-')
+        new_number = str(int(number) + 1)
+
+        return '-'.join([name, new_number])
 
     def db_get(self, key):
         ''' (self, str) => None
@@ -28,7 +51,7 @@ class Database():
         offset = self.is_indexed(key)
 
         val = None
-        with open(self.db_name, 'r') as s:
+        with open(self.current_segment, 'r') as s:
             if offset:
                 s.seek(offset)
                 k, v = line.split(',')
@@ -50,7 +73,7 @@ class Database():
         ''' (self) => None
         Parses the database file and loads keys into the index. Warning, this is really slow!
         '''
-        with open(self.db_name, 'r') as s:
+        with open(self.current_segment, 'r') as s:
             for line in s:
                 k, v = line.split(',')
                 self.index[k] = v

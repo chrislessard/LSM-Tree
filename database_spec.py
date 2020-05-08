@@ -2,7 +2,7 @@ import os
 import unittest
 import database as database
 
-FILENAME = 'test_file.bin'
+FILENAME = 'test_file-1'
 
 class TestDatabase(unittest.TestCase):
     def setUp(self):
@@ -70,6 +70,17 @@ class TestDatabase(unittest.TestCase):
         
         db = database.Database(FILENAME)
         self.assertEqual(db.db_get('1'), 'new value')
+
+    # segments
+    def test_db_set_uses_segment(self):
+        db = database.Database(FILENAME)
+        db.threshold = 10
+        db.db_set('abc', 'cba')
+        db.db_set('def', 'fed') # This will cross the threshold
+
+        self.assertEqual(db.current_segment_size, 8)
+        self.assertEqual(db.current_segment, 'test_file-2')
+
 
 if __name__ == '__main__':
     unittest.main()
