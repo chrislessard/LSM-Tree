@@ -86,6 +86,24 @@ class TestDatabase(unittest.TestCase):
         
         db = database.Database(TEST_FILENAME, TEST_BASEPATH)
         self.assertEqual(db.db_get('1'), 'new value')
+    
+    def test_db_get_retrieve_val_multiple_segments(self):
+        '''
+        Tests the db_get functionality.
+        '''
+        with open(TEST_BASEPATH + 'test_file-1', 'w') as s:
+            s.write('1,test1\n')
+            s.write('2,test2\n')
+
+        with open(TEST_BASEPATH + 'test_file-2', 'w') as s:
+            s.write('3,test3\n')
+            s.write('4,test4\n')
+
+        db = database.Database(TEST_FILENAME, TEST_BASEPATH)
+        db.segments.append('test_file-2')
+
+        self.assertEqual(db.db_get('1'), 'test1')
+        self.assertEqual(db.db_get('3'), 'test3')
 
     # segments
     def test_db_set_uses_segment(self):

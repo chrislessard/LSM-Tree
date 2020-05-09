@@ -13,13 +13,12 @@ class Database():
 
     def __init__(self, database_name, segments_dir_name):
         self.segments_dir_name = segments_dir_name
-        self.segments = [self.current_segment]
         self.current_segment = database_name
+        self.segments = [self.current_segment]
         self.current_segment_size = 0
 
         self.threshold = 100000
         self.index = {}
-
 
         if not (Path(segments_dir_name).exists() and Path(segments_dir_name).is_dir):
             Path(segments_dir_name).mkdir()
@@ -47,30 +46,31 @@ class Database():
         
         self.current_segment_size += log_size
 
-    def new_segment_name(self):
-        name, number = self.current_segment.split('-')
-        new_number = str(int(number) + 1)
-
-        return '-'.join([name, new_number])
-
     def db_get(self, key):
         ''' (self, str) => None
         Retrieve the value associated with key in the db
         '''
         offset = self.is_indexed(key)
+        segments = self.segments[:]
 
-        val = None
-        with open(self.full_path(), 'r') as s:
-            if offset:
-                s.seek(offset)
-                k, v = line.split(',')
-                val = v
-            else:
-                for line in s:
+        while len(segments):
+            segment = segments.pop()
+            segment_path = self.segments_dir_name + segment
+
+            val = None
+            with open(segment_path, 'r') as s:
+                if offset:
+                    s.seek(offset)
                     k, v = line.split(',')
                     if k == key:
                         val = v.strip()
-        return val
+                else:
+                    for line in s:
+                        k, v = line.split(',')
+                        if k == key:
+                            val = v.strip()
+            if val:
+                return val
 
     def is_indexed(self, key):
         ''' (self, int) => Bool
@@ -80,7 +80,8 @@ class Database():
 
     def load_index(self):
         ''' (self) => None
-        Parses the database file and loads keys into the index. Warning, this is really slow!
+        Parses the database file and loads keys into the index. 
+        Only retrieves values for the current segment. Warning, this is really slow!
         '''
         with open(self.full_path(), 'r') as s:
             for line in s:
@@ -101,8 +102,15 @@ class Database():
         with open(self.full_path(), 'rb') as snapshot_file_stream:
             self.index = pickle.load(snapshot_file_stream)
 
+    # Helper methods
     def full_path(self):
         return self.segments_dir_name + self.current_segment
+
+    def new_segment_name(self):
+        name, number = self.current_segment.split('-')
+        new_number = str(int(number) + 1)
+
+        return '-'.join([name, new_number])
 
 def main():
     '''
