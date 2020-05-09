@@ -1,6 +1,7 @@
 from pathlib import Path
 import pickle
 
+BASEPATH = 'segments/'
 FILENAME = 'database-1'
 
 class Database():
@@ -10,12 +11,20 @@ class Database():
     threshold = None
     index = None
 
-    def __init__(self, database_name):
-        self.current_segment = database_name
-        self.index = {}
+    def __init__(self, database_name, segments_dir_name):
+        self.segments_dir_name = segments_dir_name
         self.segments = [self.current_segment]
+        self.current_segment = database_name
         self.current_segment_size = 0
+
         self.threshold = 100000
+        self.index = {}
+
+
+        if not (Path(segments_dir_name).exists() and Path(segments_dir_name).is_dir):
+            Path(segments_dir_name).mkdir()
+        else:
+            pass
 
     def db_set(self, key, value):
         ''' (self, str, str) => None
@@ -31,8 +40,8 @@ class Database():
             self.current_segment_size = 0
             self.segments.append(self.current_segment)
 
-        with open(self.current_segment, 'a') as s:
-            offset = Path(self.current_segment).stat().st_size
+        with open(self.full_path(), 'a') as s:
+            offset = Path(self.full_path()).stat().st_size
             self.index[key] = offset
             s.write(log)
         
@@ -51,7 +60,7 @@ class Database():
         offset = self.is_indexed(key)
 
         val = None
-        with open(self.current_segment, 'r') as s:
+        with open(self.full_path(), 'r') as s:
             if offset:
                 s.seek(offset)
                 k, v = line.split(',')
@@ -73,7 +82,7 @@ class Database():
         ''' (self) => None
         Parses the database file and loads keys into the index. Warning, this is really slow!
         '''
-        with open(self.current_segment, 'r') as s:
+        with open(self.full_path(), 'r') as s:
             for line in s:
                 k, v = line.split(',')
                 self.index[k] = v
@@ -82,15 +91,18 @@ class Database():
         ''' (self, str) => None
         Saves a pickle dump of the current index to disk, calling the file name.
         '''
-        with open(name, 'wb') as snapshot_file_stream:
+        with open(self.full_path(), 'wb') as snapshot_file_stream:
             pickle.dump(self.index, snapshot_file_stream)
 
     def load_index_snapshot(self, name):
         ''' (self, str) => None
         Loads a snapshot of the index from disk to memory, using file name.
         '''
-        with open(name, 'rb') as snapshot_file_stream:
+        with open(self.full_path(), 'rb') as snapshot_file_stream:
             self.index = pickle.load(snapshot_file_stream)
+
+    def full_path(self):
+        return self.segments_dir_name + self.current_segment
 
 def main():
     '''
@@ -106,7 +118,7 @@ def main():
         'exit'
     ]
 
-    db = Database(FILENAME)
+    db = Database(FILENAME, BASEPATH)
 
     while True:
         print('\n\t'.join(usage_msg))
