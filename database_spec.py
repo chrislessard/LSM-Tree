@@ -11,12 +11,14 @@ class TestDatabase(unittest.TestCase):
         pass
 
     def tearDown(self):
-        
         for filename in os.listdir(TEST_BASEPATH):
             os.remove(TEST_BASEPATH + filename)
 
     # db_set
     def test_db_set_stores_pair(self):
+        '''
+        Tests the db_set functionality.
+        '''
         db = database.Database(TEST_FILENAME, TEST_BASEPATH)
         
         db.db_set('1', 'test1')
@@ -30,6 +32,9 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(line2, '2,test2')
 
     def test_db_set_stores_index(self):
+        '''
+        Tests that indexes are stored upon db_set call.
+        '''
         db = database.Database(TEST_FILENAME, TEST_BASEPATH)
         
         db.db_set('1', 'test1')
@@ -39,6 +44,9 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.index['2'], 8)
 
     def test_db_set_index_retrieves_correct_value(self):
+        '''
+        Tests that the index stores the correct value.
+        '''
         db = database.Database(TEST_FILENAME, TEST_BASEPATH)
         
         db.db_set('1', 'test1')
@@ -54,6 +62,9 @@ class TestDatabase(unittest.TestCase):
 
     # db_get
     def test_db_get_retrieve_val(self):
+        '''
+        Tests the db_get functionality.
+        '''
         with open(TESTPATH, 'w') as s:
             s.write('1,test1\n')
             s.write('2,test2\n')
@@ -65,6 +76,9 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.db_get('3'), None)
     
     def test_db_get_retrieve_most_recent_val(self):
+        '''
+        Tests that db_get retrieves the most recent key value.
+        '''
         with open(TESTPATH, 'w') as s:
             s.write('1,test1\n')
             s.write('2,test2\n')
@@ -75,6 +89,9 @@ class TestDatabase(unittest.TestCase):
 
     # segments
     def test_db_set_uses_segment(self):
+        '''
+        Tests that new segments are created and used when the threshold is reached.
+        '''
         db = database.Database(TEST_FILENAME, TEST_BASEPATH)
         db.threshold = 10
         db.db_set('abc', 'cba')
