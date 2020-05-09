@@ -151,14 +151,14 @@ class TestDatabase(unittest.TestCase):
             s.write('3,test9\n')
 
         db = database.Database(TEST_FILENAME, TEST_BASEPATH)
-        db.compact()
+        db.compact_segment(TEST_FILENAME)
 
         with open(TEST_BASEPATH + TEST_FILENAME, 'r') as s:
             lines = s.readlines()
 
         self.assertEqual(lines, ['1,test7\n', '2,test8\n', '3,test9\n'])
 
-    def test_compact_single_segment(self):
+    def test_compact_multiple_segment(self):
         '''
         Tests that multiple segments can be compacted.
         '''
@@ -190,6 +190,30 @@ class TestDatabase(unittest.TestCase):
 
         self.assertEqual(second_segment_lines, ['1,test7\n', '2,test8\n'])
 
+    def test_merge_two_segments(self):
+        segments = ['test_file-1', 'test_file-2']
+        with open(TEST_BASEPATH + segments[0], 'w') as s:
+            s.write('1,test1\n')
+            s.write('2,test2\n')
 
+        with open(TEST_BASEPATH + segments[1], 'w') as s:
+            s.write('1,test5\n')
+            s.write('2,test6\n')
+
+        db = database.Database(TEST_FILENAME, TEST_BASEPATH)
+        db.segments = segments
+
+        db.merge_segments(segments[0], segments[1])
+
+        with open(TEST_BASEPATH + 'test_file-1', 'r') as s:
+            segment_lines = s.readlines()
+        
+        expected_contents = ['1,test1\n', '2,test2\n', '1,test5\n', '2,test6\n']
+        self.assertEqual(segment_lines, expected_contents)
+
+
+        # Check that the second file was deleted
+        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), False)
+        
 if __name__ == '__main__':
     unittest.main()

@@ -1,4 +1,5 @@
 from pathlib import Path
+from os import remove as remove_file
 import pickle
 
 BASEPATH = 'segments/'
@@ -98,6 +99,24 @@ class Database():
         '''
         for segment in self.segments:
             self.compact_segment(segment)
+
+    def merge_segments(self, segment1, segment2):
+        ''' (self, str, str) => str
+        Concatenates the contents of the files represented byt segment1 and
+        segment 2, erases the second segment file and returns the name of the
+        first segment. 
+        '''
+        path1 = self.segments_dir_name + segment1
+        path2 = self.segments_dir_name + segment2
+
+        with open(path1, 'a') as s1:
+            with open(path2, 'r') as s2:
+                for line in s2:
+                    s1.write(line)
+
+        remove_file(path2)
+        return segment1
+
 
     def save_index_snapshot(self, name):
         ''' (self, str) => None
