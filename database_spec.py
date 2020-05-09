@@ -158,7 +158,7 @@ class TestDatabase(unittest.TestCase):
 
         self.assertEqual(lines, ['1,test7\n', '2,test8\n', '3,test9\n'])
 
-    def test_compact_multiple_segment(self):
+    def test_compact_even_number_multiple_segments(self):
         '''
         Tests that multiple segments can be compacted.
         '''
@@ -179,16 +179,117 @@ class TestDatabase(unittest.TestCase):
         db.segments = segments
         db.compact()
 
-        # Check first segment
-        with open(TEST_BASEPATH + TEST_FILENAME, 'r') as s:
+        # Check first segment is correct
+        with open(TEST_BASEPATH + segments[0], 'r') as s:
             first_segment_lines = s.readlines()
 
-        self.assertEqual(first_segment_lines, ['1,test3\n', '2,test4\n'])
+        expected_result = ['1,test3\n', '2,test4\n', '1,test7\n', '2,test8\n']
 
-        with open(TEST_BASEPATH + 'test_file-2', 'r') as s:
-            second_segment_lines = s.readlines()
+        self.assertEqual(first_segment_lines, expected_result)
+        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), False)
 
-        self.assertEqual(second_segment_lines, ['1,test7\n', '2,test8\n'])
+        # Test that the db's current segment size tracker is set correctly
+        result_size = len('1,test1\n') * 4
+        self.assertEqual(db.current_segment_size, result_size)
+
+        self.assertEqual(db.current_segment, segments[0])
+
+    def test_compact_odd_number_multiple_segments(self):
+        '''
+        Tests that multiple segments can be compacted.
+        '''
+        segments = ['test_file-1', 'test_file-2', 'test_file-3']
+        with open(TEST_BASEPATH + segments[0], 'w') as s:
+            s.write('1,test1\n')
+            s.write('2,test2\n')
+            s.write('1,test3\n')
+            s.write('2,test4\n')
+
+        with open(TEST_BASEPATH + segments[1], 'w') as s:
+            s.write('1,test5\n')
+            s.write('2,test6\n')
+            s.write('1,test7\n')
+            s.write('2,test8\n')
+
+        with open(TEST_BASEPATH + segments[2], 'w') as s:
+            s.write('1,test9\n')
+            s.write('2,testa\n')
+            s.write('1,testb\n')
+            s.write('2,testc\n')
+
+        db = database.Database(TEST_FILENAME, TEST_BASEPATH)
+        db.segments = segments
+        db.compact()
+
+        # Check first segment is correct
+        with open(TEST_BASEPATH + segments[0], 'r') as s:
+            first_segment_lines = s.readlines()
+
+        expected_result = [
+            '1,test3\n', 
+            '2,test4\n', 
+            '1,test7\n', 
+            '2,test8\n', 
+            '1,testb\n', 
+            '2,testc\n'
+        ]
+
+        self.assertEqual(first_segment_lines, expected_result)
+
+        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), False)
+        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[2]), False)
+
+        # Test that the db's current segment size tracker is set correctly
+        result_size = len('1,test1\n') * 6
+        self.assertEqual(db.current_segment_size, result_size)
+        self.assertEqual(db.current_segment, segments[0])
+
+    def test_compact_multiple_segments_with_threshold(self):
+        '''
+        Tests that the compaction algorithm correctly factors in the segment
+        size threshold when merging segments.
+        '''
+        segments = ['test_file-1', 'test_file-2', 'test_file-3']
+        with open(TEST_BASEPATH + segments[0], 'w') as s:
+            s.write('1,test1\n')
+            s.write('2,test2\n')
+            s.write('1,test3\n')
+            s.write('2,test4\n')
+
+        with open(TEST_BASEPATH + segments[1], 'w') as s:
+            s.write('1,test5\n')
+            s.write('2,test6\n')
+            s.write('1,test7\n')
+            s.write('2,test8\n')
+
+        with open(TEST_BASEPATH + segments[2], 'w') as s:
+            s.write('1,test9\n')
+            s.write('2,testa\n')
+            s.write('1,testb\n')
+            s.write('2,testc\n')
+
+        db = database.Database(TEST_FILENAME, TEST_BASEPATH)
+        db.segments = segments
+        db.threshold = 8 * 4
+        db.compact()
+
+        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[0]), True)
+        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), True)
+        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[2]), False)
+
+        first_seg_expected_vals = ['1,test3\n', '2,test4\n', '1,test7\n', '2,test8\n']
+        scnd_seg_expected_vals = ['1,testb\n', '2,testc\n']
+
+        # Check first segment is correct
+        with open(TEST_BASEPATH + segments[0], 'r') as s:
+            first_segment_lines = s.readlines()
+
+        # Check second segment is correct
+        with open(TEST_BASEPATH + segments[1], 'r') as s:
+            scnd_segment_lines = s.readlines()
+
+        self.assertEqual(first_segment_lines, first_seg_expected_vals)
+        self.assertEqual(scnd_segment_lines, scnd_seg_expected_vals)
 
     def test_merge_two_segments(self):
         segments = ['test_file-1', 'test_file-2']
@@ -211,13 +312,13 @@ class TestDatabase(unittest.TestCase):
         expected_contents = ['1,test1\n', '2,test2\n', '1,test5\n', '2,test6\n']
         self.assertEqual(segment_lines, expected_contents)
 
-
         # Check that the second file was deleted
         self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), False)
     
     def test_rename_segments(self):
         '''
-
+        Tests that a list of segment names with mislabled suffixes are properly
+        re-labelled.
         '''
         segments = ['segment-1', 'segment-4', 'segment-6', 'segment-7']
         expected_result = ['segment-1', 'segment-2', 'segment-3', 'segment-4']

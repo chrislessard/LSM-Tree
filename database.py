@@ -1,5 +1,6 @@
 from pathlib import Path
 from os import remove as remove_file
+from os import rename as rename_file
 import pickle
 
 BASEPATH = 'segments/'
@@ -100,43 +101,54 @@ class Database():
         for segment in self.segments:
             self.compact_segment(segment)
 
-        # # Reduce segments
-        # compacted = []
-        # segments = self.segments[:]
-        # while len(segments) > 1:
-        #     # pop two segs from segments
-        #     seg1, seg2 = segments.pop(), segments.pop()
-            
-        #     # check if their total size exceeds the threshold
-        #     seg1_size = Path(self.segments_dir_name + seg1).stat().st_size
-        #     seg2_size = Path(self.segments_dir_name + seg2).stat().st_size
+        # Reduce segments
+        compacted = []
+        segments = self.segments[:]
 
-        #     total = seg1_size + seg2_size
+        while len(segments) > 1:
+            # pop two segs from segments
+            seg1, seg2 = segments.pop(0), segments.pop(0)
 
-        #     if total > self.threshold:
-        #         # add seg1 segment to compacted and seg2 back to start of segments
-        #         compacted.append(seg1)
-        #         segments = [seg2] + segments
-        #     else:
-        #         # merge the two segments, conserving the name of the seg1 one
-        #         merged_segment = self.merge_segments(seg1, seg2)
-        #         segments = [merged_segment] + segments
+            # check if their total size exceeds the threshold
+            seg1_size = Path(self.segments_dir_name + seg1).stat().st_size
+            seg2_size = Path(self.segments_dir_name + seg2).stat().st_size
 
-        # result = compacted + segments
+            total = seg1_size + seg2_size
 
-        # # rename all segments in compact to following the correct numbering
-        # self.rename_segments(result)
+            if total > self.threshold:
+                # add seg1 segment to compacted and seg2 back to start of segments
+                compacted.append(seg1)
+                segments = [seg2] + segments
+            else:
+                # merge the two segments, conserving the name of the seg1 one
+                merged_segment = self.merge_segments(seg1, seg2)
+                segments = [merged_segment] + segments
 
-        # # replace self.segments with compacted + last segment
-        # # update the current segment and its size 
-        # self.segments = result
-        # self.current_segment = result[-1]
-        # self.current_segment_size = Path(self.segments_dir_name + self.current_segment).stat().st_size
+        result = compacted + segments
+
+        # the leftover segments wont be ordered properly by name
+        self.segments = self.rename_segment_files(result)
+
+        self.current_segment = self.segments[-1]
+        self.current_segment_size = Path(self.segments_dir_name + self.current_segment).stat().st_size
+
+    def rename_segment_files(self, result):
+        ''' (self) => [str]
+        Renames the segment files on disk to make sure that their suffixes are 
+        in proper ascending order.
+        '''
+        corrected_names = self.rename_segments(result)
+        for idx, segment in enumerate(result):
+            old_path = self.segments_dir_name + segment
+            new_path = self.segments_dir_name + corrected_names[idx]
+            rename_file(old_path, new_path)
+
+        return corrected_names
 
     def rename_segments(self, seg_list):
-        ''' (self, [str]) -> None
+        ''' (self, [str]) -> [str]
         Renames the segments to make sure that their suffixes are in proper
-        assending order
+        ascending order.
         '''
         result = []
 
@@ -164,7 +176,6 @@ class Database():
 
         remove_file(path2)
         return segment1
-
 
     def save_index_snapshot(self, name):
         ''' (self, str) => None
