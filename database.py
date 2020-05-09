@@ -8,7 +8,7 @@ class Database():
     current_segment = None
     current_segment_size = None
     segments = None
-    threshold = None
+    threshold = 15
     index = None
 
     def __init__(self, database_name, segments_dir_name):
@@ -40,6 +40,7 @@ class Database():
             self.segments.append(self.current_segment)
 
         with open(self.full_path(), 'a') as s:
+            # Offset is fetched as current number of bytes in file up until this write
             offset = Path(self.full_path()).stat().st_size
             self.index[key] = offset
             s.write(log)
@@ -61,6 +62,7 @@ class Database():
             with open(segment_path, 'r') as s:
                 if offset:
                     s.seek(offset)
+                    line = s.readline()
                     k, v = line.split(',')
                     if k == key:
                         val = v.strip()
@@ -83,10 +85,13 @@ class Database():
         Parses the database file and loads keys into the index. 
         Only retrieves values for the current segment. Warning, this is really slow!
         '''
+        byte_count = 0
         with open(self.full_path(), 'r') as s:
             for line in s:
                 k, v = line.split(',')
-                self.index[k] = v
+                self.index[k] = byte_count
+                byte_count += len(line)
+
 
     def save_index_snapshot(self, name):
         ''' (self, str) => None
@@ -137,7 +142,7 @@ def main():
             db.db_set(key, val)
         elif cmd[0] == 'get':
             key = cmd[1]
-            db.db_get(key)
+            print(db.db_get(key), '\n')
         elif cmd[0] == 'load_index':
             db.load_index()
         elif cmd[0] == 'save_index_snapshot':

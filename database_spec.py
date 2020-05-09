@@ -105,6 +105,22 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.db_get('1'), 'test1')
         self.assertEqual(db.db_get('3'), 'test3')
 
+    # load_index
+    def test_load_index_correctly_creates_hash(self):
+        '''
+        Tests that load_index correctly maps keys in the current segment to offsets
+        in the file on disk
+        '''
+        with open(TEST_BASEPATH + TEST_FILENAME, 'w') as s:
+            s.write('1,test1\n')
+            s.write('2,test2\n')
+            s.write('3,test3\n')
+        db = database.Database(TEST_FILENAME, TEST_BASEPATH)
+        db.load_index()
+
+        expected_index = {'1': 0, '2':8, '3': 16}
+        self.assertEqual(db.index, expected_index)
+
     # segments
     def test_db_set_uses_segment(self):
         '''
