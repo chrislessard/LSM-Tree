@@ -8,7 +8,7 @@ class Database():
     current_segment = None
     current_segment_size = None
     segments = None
-    threshold = 15
+    threshold = None
     index = None
 
     def __init__(self, database_name, segments_dir_name):
@@ -17,7 +17,7 @@ class Database():
         self.segments = [self.current_segment]
         self.current_segment_size = 0
 
-        self.threshold = 100000
+        self.threshold = 1000000
         self.index = {}
 
         if not (Path(segments_dir_name).exists() and Path(segments_dir_name).is_dir):
@@ -30,7 +30,6 @@ class Database():
         Stores a new key value pair in the DB
         '''
         log = str(key) + ',' + (value) + '\n'
-
         # Check if we need a new segment
         log_size = len(log)
         if self.current_segment_size + log_size > self.threshold:
@@ -44,7 +43,7 @@ class Database():
             offset = Path(self.full_path()).stat().st_size
             self.index[key] = offset
             s.write(log)
-        
+
         self.current_segment_size += log_size
 
     def db_get(self, key):
@@ -60,7 +59,8 @@ class Database():
 
             val = None
             with open(segment_path, 'r') as s:
-                if offset:
+                # Todo: generalize offset across all segments
+                if offset and segment == self.current_segment:
                     s.seek(offset)
                     line = s.readline()
                     k, v = line.split(',')
