@@ -29,7 +29,7 @@ class Database():
         ''' (self, str, str) => None
         Stores a new key value pair in the DB
         '''
-        log = str(key) + ',' + (value) + '\n'
+        log = self.log_entry(key, value)
         # Check if we need a new segment
         log_size = len(log)
         if self.current_segment_size + log_size > self.threshold:
@@ -92,6 +92,21 @@ class Database():
                 self.index[k] = byte_count
                 byte_count += len(line)
 
+    def compact(self):
+        ''' (self) => None
+        Performs the compaction algorithm on the database segments.
+        '''
+        keys = {}
+        with open(self.full_path(), 'r') as s:
+            for line in s:
+                k, v = line.split(',')
+                keys[k] = v
+
+        with open(self.full_path(), 'w') as s:
+            s.truncate(0)
+            for key, val in keys.items():
+                log = self.log_entry(key, val.strip())
+                s.write(log)
 
     def save_index_snapshot(self, name):
         ''' (self, str) => None
@@ -116,6 +131,13 @@ class Database():
         new_number = str(int(number) + 1)
 
         return '-'.join([name, new_number])
+    
+    def log_entry(self, key, value):
+        '''(str, str) => str
+        Converts a key value pair into a comma seperated newline delimited
+        log entry.
+        '''
+        return str(key) + ',' + (value) + '\n'
 
 def main():
     '''

@@ -134,5 +134,29 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.current_segment_size, 8)
         self.assertEqual(db.current_segment, 'test_file-2')
 
+    # compaction
+    def test_compact_single_segment(self):
+        '''
+        Tests that a single segment can be compacted.
+        '''
+        with open(TEST_BASEPATH + TEST_FILENAME, 'w') as s:
+            s.write('1,test1\n')
+            s.write('2,test2\n')
+            s.write('3,test3\n')
+            s.write('1,test4\n')
+            s.write('2,test5\n')
+            s.write('3,test6\n')
+            s.write('1,test7\n')
+            s.write('2,test8\n')
+            s.write('3,test9\n')
+
+        db = database.Database(TEST_FILENAME, TEST_BASEPATH)
+        db.compact()
+
+        with open(TEST_BASEPATH + TEST_FILENAME, 'r') as s:
+            lines = s.readlines()
+
+        self.assertEqual(lines, ['1,test7\n', '2,test8\n', '3,test9\n'])
+
 if __name__ == '__main__':
     unittest.main()
