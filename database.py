@@ -3,9 +3,6 @@ from os import remove as remove_file
 from os import rename as rename_file
 import pickle
 
-BASEPATH = 'segments/'
-FILENAME = 'database-1'
-
 class Database():
     current_segment = None
     current_segment_size = None
@@ -28,7 +25,7 @@ class Database():
             pass
 
     def db_set(self, key, value):
-        ''' (self, str, str) => None
+        ''' (self, str, str) -> None
         Stores a new key value pair in the DB
         '''
         log = self.log_entry(key, value)
@@ -49,7 +46,7 @@ class Database():
         self.current_segment_size += log_size
 
     def db_get(self, key):
-        ''' (self, str) => None
+        ''' (self, str) -> None
         Retrieve the value associated with key in the db
         '''
         offset = self.is_indexed(key)
@@ -77,13 +74,13 @@ class Database():
                 return val
 
     def is_indexed(self, key):
-        ''' (self, int) => Bool
+        ''' (self, int) -> Bool
         Checks whether key is stored in the DB's index
         '''
         return self.index[key] if key in self.index.keys() else None
 
     def load_index(self):
-        ''' (self) => None
+        ''' (self) -> None
         Parses the database file and loads keys into the index. 
         Only retrieves values for the current segment. Warning, this is really slow!
         '''
@@ -95,7 +92,7 @@ class Database():
                 byte_count += len(line)
 
     def compact(self):
-        ''' (self) => None
+        ''' (self) -> None
         Performs the compaction algorithm on the database segments.
         '''
         for segment in self.segments:
@@ -133,7 +130,7 @@ class Database():
         self.current_segment_size = Path(self.segments_dir_name + self.current_segment).stat().st_size
 
     def rename_segment_files(self, result):
-        ''' (self) => [str]
+        ''' (self) -> [str]
         Renames the segment files on disk to make sure that their suffixes are 
         in proper ascending order.
         '''
@@ -161,7 +158,7 @@ class Database():
         return result
 
     def merge_segments(self, segment1, segment2):
-        ''' (self, str, str) => str
+        ''' (self, str, str) -> str
         Concatenates the contents of the files represented byt segment1 and
         segment 2, erases the second segment file and returns the name of the
         first segment. 
@@ -178,14 +175,14 @@ class Database():
         return segment1
 
     def save_index_snapshot(self, name):
-        ''' (self, str) => None
+        ''' (self, str) -> None
         Saves a pickle dump of the current index to disk, calling the file name.
         '''
         with open(self.full_path(), 'wb') as snapshot_file_stream:
             pickle.dump(self.index, snapshot_file_stream)
 
     def load_index_snapshot(self, name):
-        ''' (self, str) => None
+        ''' (self, str) -> None
         Loads a snapshot of the index from disk to memory, using file name.
         '''
         with open(self.full_path(), 'rb') as snapshot_file_stream:
@@ -196,13 +193,16 @@ class Database():
         return self.segments_dir_name + self.current_segment
 
     def new_segment_name(self):
+        ''' (self) -> None
+        Calculate the name of incrementing the current segment.
+        '''
         name, number = self.current_segment.split('-')
         new_number = str(int(number) + 1)
 
         return '-'.join([name, new_number])
     
     def log_entry(self, key, value):
-        '''(str, str) => str
+        '''(str, str) -> str
         Converts a key value pair into a comma seperated newline delimited
         log entry.
         '''
@@ -219,45 +219,3 @@ class Database():
             for key, val in keys.items():
                 log = self.log_entry(key, val.strip())
                 s.write(log)
-
-def main():
-    '''
-    Run the database interface.
-    '''
-    usage_msg = [
-        'Please select an option: ',
-        'store {key} {data}',
-        'get {key}',
-        'load_index',
-        'save_index_snapshot {filename}',
-        'load_index_snapshot {filename}',
-        'exit'
-    ]
-
-    db = Database(FILENAME, BASEPATH)
-
-    while True:
-        print('\n\t'.join(usage_msg))
-        cmd = input('$ ').lower().split(' ')
-
-        if cmd[0] == 'store':
-            key, val = cmd[1], cmd[2]
-            db.db_set(key, val)
-        elif cmd[0] == 'get':
-            key = cmd[1]
-            print(db.db_get(key), '\n')
-        elif cmd[0] == 'load_index':
-            db.load_index()
-        elif cmd[0] == 'save_index_snapshot':
-            name = cmd[1]
-            db.save_index_snapshot(name)
-        elif cmd[0] == 'load_index_snapshot':
-            name = cmd[1]
-            db.load_index_snapshot(name)
-        elif cmd[0] == 'exit':
-            break
-        else:
-            print('Invalid command.')
-
-if __name__ == "__main__":
-    main()
