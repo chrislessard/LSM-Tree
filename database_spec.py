@@ -214,6 +214,16 @@ class TestDatabase(unittest.TestCase):
 
         # Check that the second file was deleted
         self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), False)
-        
+    
+    def test_rename_segments(self):
+        '''
+
+        '''
+        segments = ['segment-1', 'segment-4', 'segment-6', 'segment-7']
+        expected_result = ['segment-1', 'segment-2', 'segment-3', 'segment-4']
+        db = database.Database(TEST_FILENAME, TEST_BASEPATH)
+        result = db.rename_segments(segments)
+        self.assertEqual(result, expected_result)
+
 if __name__ == '__main__':
     unittest.main()

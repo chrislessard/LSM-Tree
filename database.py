@@ -100,6 +100,54 @@ class Database():
         for segment in self.segments:
             self.compact_segment(segment)
 
+        # # Reduce segments
+        # compacted = []
+        # segments = self.segments[:]
+        # while len(segments) > 1:
+        #     # pop two segs from segments
+        #     seg1, seg2 = segments.pop(), segments.pop()
+            
+        #     # check if their total size exceeds the threshold
+        #     seg1_size = Path(self.segments_dir_name + seg1).stat().st_size
+        #     seg2_size = Path(self.segments_dir_name + seg2).stat().st_size
+
+        #     total = seg1_size + seg2_size
+
+        #     if total > self.threshold:
+        #         # add seg1 segment to compacted and seg2 back to start of segments
+        #         compacted.append(seg1)
+        #         segments = [seg2] + segments
+        #     else:
+        #         # merge the two segments, conserving the name of the seg1 one
+        #         merged_segment = self.merge_segments(seg1, seg2)
+        #         segments = [merged_segment] + segments
+
+        # result = compacted + segments
+
+        # # rename all segments in compact to following the correct numbering
+        # self.rename_segments(result)
+
+        # # replace self.segments with compacted + last segment
+        # # update the current segment and its size 
+        # self.segments = result
+        # self.current_segment = result[-1]
+        # self.current_segment_size = Path(self.segments_dir_name + self.current_segment).stat().st_size
+
+    def rename_segments(self, seg_list):
+        ''' (self, [str]) -> None
+        Renames the segments to make sure that their suffixes are in proper
+        assending order
+        '''
+        result = []
+
+        for i in range(len(seg_list)):
+            name = seg_list[i]
+            name_decomp = name.split('-')
+            name_decomp[-1] = str(i + 1)
+            result.append('-'.join(name_decomp))
+
+        return result
+
     def merge_segments(self, segment1, segment2):
         ''' (self, str, str) => str
         Concatenates the contents of the files represented byt segment1 and
