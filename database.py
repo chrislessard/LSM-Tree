@@ -96,17 +96,8 @@ class Database():
         ''' (self) => None
         Performs the compaction algorithm on the database segments.
         '''
-        keys = {}
-        with open(self.full_path(), 'r') as s:
-            for line in s:
-                k, v = line.split(',')
-                keys[k] = v
-
-        with open(self.full_path(), 'w') as s:
-            s.truncate(0)
-            for key, val in keys.items():
-                log = self.log_entry(key, val.strip())
-                s.write(log)
+        for segment in self.segments:
+            self.compact_segment(segment)
 
     def save_index_snapshot(self, name):
         ''' (self, str) => None
@@ -138,6 +129,18 @@ class Database():
         log entry.
         '''
         return str(key) + ',' + (value) + '\n'
+
+    def compact_segment(self, segment_name):
+        keys = {}
+        with open(self.segments_dir_name + segment_name, 'r') as s:
+            for line in s:
+                k, v = line.split(',')
+                keys[k] = v
+
+        with open(self.segments_dir_name + segment_name, 'w') as s:
+            for key, val in keys.items():
+                log = self.log_entry(key, val.strip())
+                s.write(log)
 
 def main():
     '''

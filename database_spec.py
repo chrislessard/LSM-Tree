@@ -158,5 +158,38 @@ class TestDatabase(unittest.TestCase):
 
         self.assertEqual(lines, ['1,test7\n', '2,test8\n', '3,test9\n'])
 
+    def test_compact_single_segment(self):
+        '''
+        Tests that multiple segments can be compacted.
+        '''
+        segments = ['test_file-1', 'test_file-2']
+        with open(TEST_BASEPATH + segments[0], 'w') as s:
+            s.write('1,test1\n')
+            s.write('2,test2\n')
+            s.write('1,test3\n')
+            s.write('2,test4\n')
+
+        with open(TEST_BASEPATH + segments[1], 'w') as s:
+            s.write('1,test5\n')
+            s.write('2,test6\n')
+            s.write('1,test7\n')
+            s.write('2,test8\n')
+
+        db = database.Database(TEST_FILENAME, TEST_BASEPATH)
+        db.segments = segments
+        db.compact()
+
+        # Check first segment
+        with open(TEST_BASEPATH + TEST_FILENAME, 'r') as s:
+            first_segment_lines = s.readlines()
+
+        self.assertEqual(first_segment_lines, ['1,test3\n', '2,test4\n'])
+
+        with open(TEST_BASEPATH + 'test_file-2', 'r') as s:
+            second_segment_lines = s.readlines()
+
+        self.assertEqual(second_segment_lines, ['1,test7\n', '2,test8\n'])
+
+
 if __name__ == '__main__':
     unittest.main()
