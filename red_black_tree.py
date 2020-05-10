@@ -61,7 +61,7 @@ class Node:
         
 class RedBlackTree:
     # every node has null nodes as children initially, create one such object for easy management
-    NIL_LEAF = Node(key=None, color=NIL, parent=None)
+    NIL_LEAF = Node(key=None, color=NIL, parent=None, value=None)
 
     def __init__(self):
         self.count = 0
@@ -85,7 +85,7 @@ class RedBlackTree:
         parent, node_dir = self._find_parent(key)
         if node_dir is None:
             return  # key is in the tree
-        new_node = Node(key=key, color=RED, parent=parent, left=self.NIL_LEAF, right=self.NIL_LEAF)
+        new_node = Node(key=key, color=RED, parent=parent, left=self.NIL_LEAF, right=self.NIL_LEAF, value=value)
         if node_dir == 'L':
             parent.left = new_node
         else:

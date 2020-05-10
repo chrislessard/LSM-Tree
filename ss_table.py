@@ -1,7 +1,7 @@
 from pathlib import Path
 from os import remove as remove_file
 from os import rename as rename_file
-
+import red_black_tree as rbt
 import pickle
 
 class SSTable():
@@ -9,16 +9,19 @@ class SSTable():
     current_segment_size = None
     segments = None
     threshold = None
-    index = None
 
-    def __init__(self, database_name, segments_dir_name):
+    memtable = None
+    memtable_bkup = None
+
+    def __init__(self, database_name, segments_dir_name, memtable_bkup_name):
         self.segments_dir_name = segments_dir_name
         self.current_segment = database_name
         self.segments = [self.current_segment]
         self.current_segment_size = 0
 
         self.threshold = 1000000
-        self.index = {}
+        self.memtable = rbt.RedBlackTree()
+        self.memtable_bkup = memtable_bkup_name
 
         if not (Path(segments_dir_name).exists() and Path(segments_dir_name).is_dir):
             Path(segments_dir_name).mkdir()
@@ -29,28 +32,48 @@ class SSTable():
         ''' (self, str, str) -> None
         Stores a new key value pair in the DB
         '''
-        log = self.log_entry(key, value)
         # Check if we need a new segment
-        log_size = len(log)
-        if self.current_segment_size + log_size > self.threshold:
+        additional_size = len(key) + len(value)
+        if self.current_segment_size + additional_size > self.threshold:
+            # Flush memtable to disk
+            self.flush_memtable(self.full_path)
+            self.memtable = rbt.RedBlackTree()
+
+            # Clear the log file
+            with open(self.memtable_bkup_path(), 'w') as s:
+                s.truncate(0)
+
             new_seg_name = self.new_segment_name()
             self.current_segment = new_seg_name
             self.current_segment_size = 0
             self.segments.append(self.current_segment)
 
-        with open(self.full_path(), 'a') as s:
-            # Offset is fetched as current number of bytes in file up until this write
-            offset = Path(self.full_path()).stat().st_size
-            self.index[key] = offset
+        # write to memtable backup
+        with open(self.memtable_bkup_path(), 'a') as s:
+            log = self.log_entry(key, value)
             s.write(log)
 
-        self.current_segment_size += log_size
+        # write to memtable
+        self.memtable.add(key, value)
+        self.current_segment_size += additional_size
+
+    def flush_memtable(self, path):
+        ''' (self, str) -> None
+        Writes the contents of the current memtable to disk and wipes the current memtable.
+        '''
+        traversal = self.memtable.in_order()
+        with open(path, 'w') as s:
+            for node in traversal:
+                print(node, node.key, node.value)
+                log = self.log_entry(node.key, node.value)
+                s.write(log)
+
 
     def db_get(self, key):
         ''' (self, str) -> None
         Retrieve the value associated with key in the db
         '''
-        offset = self.is_indexed(key)
+        offset = self.is_memtableed(key)
         segments = self.segments[:]
 
         while len(segments):
@@ -74,22 +97,22 @@ class SSTable():
             if val:
                 return val
 
-    def is_indexed(self, key):
+    def is_memtableed(self, key):
         ''' (self, int) -> Bool
-        Checks whether key is stored in the DB's index
+        Checks whether key is stored in the DB's memtable
         '''
-        return self.index[key] if key in self.index.keys() else None
+        return self.memtable[key] if key in self.memtable.keys() else None
 
-    def load_index(self):
+    def load_memtable(self):
         ''' (self) -> None
-        Parses the database file and loads keys into the index. 
+        Parses the database file and loads keys into the memtable. 
         Only retrieves values for the current segment. Warning, this is really slow!
         '''
         byte_count = 0
         with open(self.full_path(), 'r') as s:
             for line in s:
                 k, v = line.split(',')
-                self.index[k] = byte_count
+                self.memtable[k] = byte_count
                 byte_count += len(line)
 
     def compact(self):
@@ -175,19 +198,19 @@ class SSTable():
         remove_file(path2)
         return segment1
 
-    def save_index_snapshot(self, name):
+    def save_memtable_snapshot(self, name):
         ''' (self, str) -> None
-        Saves a pickle dump of the current index to disk, calling the file name.
+        Saves a pickle dump of the current memtable to disk, calling the file name.
         '''
         with open(self.full_path(), 'wb') as snapshot_file_stream:
-            pickle.dump(self.index, snapshot_file_stream)
+            pickle.dump(self.memtable, snapshot_file_stream)
 
-    def load_index_snapshot(self, name):
+    def load_memtable_snapshot(self, name):
         ''' (self, str) -> None
-        Loads a snapshot of the index from disk to memory, using file name.
+        Loads a snapshot of the memtable from disk to memory, using file name.
         '''
         with open(self.full_path(), 'rb') as snapshot_file_stream:
-            self.index = pickle.load(snapshot_file_stream)
+            self.memtable = pickle.load(snapshot_file_stream)
 
     # Helper methods
     def full_path(self):
@@ -220,3 +243,9 @@ class SSTable():
             for key, val in keys.items():
                 log = self.log_entry(key, val.strip())
                 s.write(log)
+
+    def memtable_bkup_path(self):
+        ''' (self) -> str
+        Returns the full path to the memtable backup.
+        '''
+        return self.segments_dir_name + self.memtable_bkup

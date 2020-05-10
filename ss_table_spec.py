@@ -4,7 +4,7 @@ import ss_table as ss
 
 TEST_FILENAME = 'test_file-1'
 TEST_BASEPATH = 'test-segments/'
-BKUP_PATH = TEST_BASEPATH + 'backup'
+BKUP_NAME = 'test_backup'
 TESTPATH = TEST_BASEPATH + TEST_FILENAME
 
 class TestDatabase(unittest.TestCase):
@@ -16,24 +16,39 @@ class TestDatabase(unittest.TestCase):
             os.remove(TEST_BASEPATH + filename)
 
     # db_set
-    def test_db_set_stores_pair(self):
+    def test_db_set_stores_pair_in_memtable(self):
         '''
         Tests the db_set functionality.
         '''
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_PATH)
+        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         
         db.db_set('1', 'test1')
         db.db_set('2', 'test2')
 
-        with open(TESTPATH, 'r') as s:
-            line1 = s.readline().strip()
-            line2 = s.readline().strip()
+        node1 = db.memtable.find_node('1')
+        node2 = db.memtable.find_node('2')
 
-        self.assertEqual(line1, '1,test1')
-        self.assertEqual(line2, '2,test2')
+        self.assertEqual(node1.value, 'test1')
+        self.assertEqual(node2.value, 'test2')
+
+    # def test_db_set_stores_pair_in_memtable(self):
+    #     '''
+    #     Tests the db_set functionality.
+    #     '''
+    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        
+    #     db.db_set('1', 'test1')
+    #     db.db_set('2', 'test2')
+
+    #     with open(TESTPATH, 'r') as s:
+    #         line1 = s.readline().strip()
+    #         line2 = s.readline().strip()
+
+    #     self.assertEqual(line1, '1,test1')
+    #     self.assertEqual(line2, '2,test2')
 
     def test_in_order_traversal(self):
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_PATH)
+        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.memtable.add('chris', 'lessard')
         db.memtable.add('daniel', 'lessard')
         db.memtable.add('debra', 'brown')
@@ -48,7 +63,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that the memtable can be flushed to disk
         '''
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_PATH)
+        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.memtable.add('chris', 'lessard')
         db.memtable.add('daniel', 'lessard')
         db.flush_memtable(TESTPATH)
@@ -68,7 +83,7 @@ class TestDatabase(unittest.TestCase):
     #         s.write('1,test1\n')
     #         s.write('2,test2\n')
 
-    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_PATH)
+    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
 
     #     self.assertEqual(db.db_get('1'), 'test1')
     #     self.assertEqual(db.db_get('2'), 'test2')
@@ -83,7 +98,7 @@ class TestDatabase(unittest.TestCase):
     #         s.write('2,test2\n')
     #         s.write('1,new value\n')
         
-    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_PATH)
+    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
     #     self.assertEqual(db.db_get('1'), 'new value')
     
     # def test_db_get_retrieve_val_multiple_segments(self):
@@ -98,7 +113,7 @@ class TestDatabase(unittest.TestCase):
     #         s.write('3,test3\n')
     #         s.write('4,test4\n')
 
-    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_PATH)
+    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
     #     db.segments.append('test_file-2')
 
     #     self.assertEqual(db.db_get('1'), 'test1')
@@ -114,7 +129,7 @@ class TestDatabase(unittest.TestCase):
     #         s.write('1,test1\n')
     #         s.write('2,test2\n')
     #         s.write('3,test3\n')
-    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_PATH)
+    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
     #     db.load_index()
 
     #     expected_index = {'1': 0, '2':8, '3': 16}
@@ -125,7 +140,7 @@ class TestDatabase(unittest.TestCase):
     #     '''
     #     Tests that new segments are created and used when the threshold is reached.
     #     '''
-    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_PATH)
+    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
     #     db.threshold = 10
     #     db.db_set('abc', 'cba')
     #     db.db_set('def', 'fed') # This will cross the threshold
@@ -149,7 +164,7 @@ class TestDatabase(unittest.TestCase):
     #         s.write('2,test8\n')
     #         s.write('3,test9\n')
 
-    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_PATH)
+    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
     #     db.compact_segment(TEST_FILENAME)
 
     #     with open(TEST_BASEPATH + TEST_FILENAME, 'r') as s:
@@ -174,7 +189,7 @@ class TestDatabase(unittest.TestCase):
     #         s.write('1,test7\n')
     #         s.write('2,test8\n')
 
-    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_PATH)
+    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
     #     db.segments = segments
     #     db.compact()
 
@@ -216,7 +231,7 @@ class TestDatabase(unittest.TestCase):
     #         s.write('1,testb\n')
     #         s.write('2,testc\n')
 
-    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_PATH)
+    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
     #     db.segments = segments
     #     db.compact()
 
@@ -267,7 +282,7 @@ class TestDatabase(unittest.TestCase):
     #         s.write('1,testb\n')
     #         s.write('2,testc\n')
 
-    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_PATH)
+    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
     #     db.segments = segments
     #     db.threshold = 8 * 4
     #     db.compact()
@@ -300,7 +315,7 @@ class TestDatabase(unittest.TestCase):
     #         s.write('1,test5\n')
     #         s.write('2,test6\n')
 
-    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_PATH)
+    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
     #     db.segments = segments
 
     #     db.merge_segments(segments[0], segments[1])
@@ -321,7 +336,7 @@ class TestDatabase(unittest.TestCase):
     #     '''
     #     segments = ['segment-1', 'segment-4', 'segment-6', 'segment-7']
     #     expected_result = ['segment-1', 'segment-2', 'segment-3', 'segment-4']
-    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_PATH)
+    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
     #     result = db.rename_segments(segments)
     #     self.assertEqual(result, expected_result)
 
