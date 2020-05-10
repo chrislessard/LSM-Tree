@@ -8,10 +8,10 @@ BLACK = 'BLACK'
 RED = 'RED'
 NIL = 'NIL'
 
-
 class Node:
-    def __init__(self, value, color, parent, left=None, right=None):
+    def __init__(self, value, color, parent, left=None, right=None, offset=None):
         self.value = value
+        self.offset = 
         self.color = color
         self.parent = parent
         self.left = left
@@ -68,9 +68,9 @@ class RedBlackTree:
             return list()
         yield from self.root.__iter__()
 
-    def add(self, value):
+    def add(self, value, offset):
         if not self.root:
-            self.root = Node(value, color=BLACK, parent=None, left=self.NIL_LEAF, right=self.NIL_LEAF)
+            self.root = Node(value, color=BLACK, parent=None, left=self.NIL_LEAF, right=self.NIL_LEAF. offset=offset=)
             self.count += 1
             return
         parent, node_dir = self._find_parent(value)
