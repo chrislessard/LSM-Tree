@@ -16,7 +16,7 @@ class SSTable():
     def __init__(self, database_name, segments_dir_name, memtable_bkup_name):
         self.segments_dir_name = segments_dir_name
         self.current_segment = database_name
-        self.segments = [self.current_segment]
+        self.segments = []
         self.current_segment_size = 0
 
         self.threshold = 1000000
@@ -44,10 +44,10 @@ class SSTable():
                 s.truncate(0)
 
             # Update bookkeeping metadata
+            self.segments.append(self.current_segment)
             new_seg_name = self.new_segment_name()
             self.current_segment = new_seg_name
             self.current_segment_size = 0
-            self.segments.append(self.current_segment)
 
         # Write to memtable backup
         with open(self.memtable_bkup_path(), 'a') as s:
@@ -69,7 +69,6 @@ class SSTable():
             return memtable_result.value
 
         segments = self.segments[:]
-
         while len(segments):
             segment = segments.pop()
             segment_path = self.segments_dir_name + segment

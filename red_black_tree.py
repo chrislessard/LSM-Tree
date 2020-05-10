@@ -78,6 +78,13 @@ class RedBlackTree:
         yield from self.root.__iter__()
 
     def add(self, key, value):
+        # attempt to find and update the node first
+        node = self.find_node(key)
+        if node:
+            node.value = value
+            return
+
+        # add the node
         if not self.root:
             self.root = Node(key, color=BLACK, parent=None, left=self.NIL_LEAF, right=self.NIL_LEAF, value=value)
             self.count += 1
