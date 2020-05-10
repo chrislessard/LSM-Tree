@@ -3,7 +3,7 @@ from os import remove as remove_file
 from os import rename as rename_file
 import pickle
 
-class Database():
+class AugmentedLog():
     current_segment = None
     current_segment_size = None
     segments = None

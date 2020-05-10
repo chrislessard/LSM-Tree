@@ -88,3 +88,15 @@ Unnittest is a bit basic and the tests contain a lot of redundancy. In a proper 
 The merging and compaction algorithms don't support asynchronicity. Under this simplified implementation, the user has to invoke the compact algorithm themself. In the real world, the system would be configured to automatically run this process in the background on a seperate thread. In order to properly support this asynchronicity, the implementation would need to be changed. Under the current implementation, merging involves compacting all the segments, then concatenating the segments in pairs of two until it is no longer possible. This process is slow, and prevents and reading or writing from happening until it is finished. Even if it were to occur in the background, it would pose a problem for the reader/writer thread trying to access the segments being merged. To solve this problem, the merging algorithm would need to write a new segment, allowing the old segments to exist on the disk for use by the reader/writer. Periodically, the new segments would replace the old ones, minimizing waiting time for the reader/writer thread.
 
 More generally, all disk operations would benefit from parallelism. Since disk access time is very slow when compared, it may be a good idea to enqueue a seperate worker thread to perform the write while the main thread continue to look for new reads or writes.
+
+### How often we write to disk
+
+In the basic implementation of the key value store, we wrote to disk as soon as we could - every time a new value came in. In the SSTable approach, we prefer periodic flushes to disk to as to avoid regularly incurring the lag of connecting to the disk. The caveat in this strategy is that should our system crash, we lose the memtable.
+
+### Adding a sparse index to the memory table
+
+See book page 77
+
+### Testing by using class methods
+
+A lot of the tests were set up by manually creating files and calling functions. For instance, this was done in a case where a segment would be manually written to disk, rather than by calling db_set several times over. Generally speaking, I think it's ok to use internal methods in other unittests as long as those method's contracts don't change (i.e. they allow for refactoring but not full on redefinition).
