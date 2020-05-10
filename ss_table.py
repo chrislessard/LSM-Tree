@@ -43,30 +43,20 @@ class SSTable():
             with open(self.memtable_bkup_path(), 'w') as s:
                 s.truncate(0)
 
+            # Update bookkeeping metadata
             new_seg_name = self.new_segment_name()
             self.current_segment = new_seg_name
             self.current_segment_size = 0
             self.segments.append(self.current_segment)
 
-        # write to memtable backup
+        # Write to memtable backup
         with open(self.memtable_bkup_path(), 'a') as s:
             log = self.log_entry(key, value)
             s.write(log)
 
-        # write to memtable
+        # Write to memtable
         self.memtable.add(key, value)
         self.current_segment_size += additional_size
-
-    def flush_memtable(self, path):
-        ''' (self, str) -> None
-        Writes the contents of the current memtable to disk and wipes the current memtable.
-        '''
-        traversal = self.memtable.in_order()
-        with open(path, 'w') as s:
-            for node in traversal:
-                log = self.log_entry(node.key, node.value)
-                s.write(log)
-
 
     def db_get(self, key):
         ''' (self, str) -> None
@@ -95,12 +85,6 @@ class SSTable():
                             val = v.strip()
             if val:
                 return val
-
-    def is_memtableed(self, key):
-        ''' (self, int) -> Bool
-        Checks whether key is stored in the DB's memtable
-        '''
-        return self.memtable[key] if key in self.memtable.keys() else None
 
     def load_memtable(self):
         ''' (self) -> None
@@ -210,6 +194,16 @@ class SSTable():
         '''
         with open(self.full_path(), 'rb') as snapshot_file_stream:
             self.memtable = pickle.load(snapshot_file_stream)
+
+    def flush_memtable(self, path):
+        ''' (self, str) -> None
+        Writes the contents of the current memtable to disk and wipes the current memtable.
+        '''
+        traversal = self.memtable.in_order()
+        with open(path, 'w') as s:
+            for node in traversal:
+                log = self.log_entry(node.key, node.value)
+                s.write(log)
 
     # Helper methods
     def full_path(self):
