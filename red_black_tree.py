@@ -9,22 +9,22 @@ RED = 'RED'
 NIL = 'NIL'
 
 class Node:
-    def __init__(self, value, color, parent, left=None, right=None, offset=None):
+    def __init__(self, key, color, parent, left=None, right=None, value=None):
+        self.key = key
         self.value = value
-        self.offset = 
         self.color = color
         self.parent = parent
         self.left = left
         self.right = right
 
     def __repr__(self):
-        return '{color} {val} Node'.format(color=self.color, val=self.value)
+        return '{color} {val} Node'.format(color=self.color, val=self.key)
 
     def __iter__(self):
         if self.left.color != NIL:
             yield from self.left.__iter__()
 
-        yield self.value
+        yield self.key
 
         if self.right.color != NIL:
             yield from self.right.__iter__()
@@ -36,8 +36,8 @@ class Node:
         if self.parent is None or other.parent is None:
             parents_are_same = self.parent is None and other.parent is None
         else:
-            parents_are_same = self.parent.value == other.parent.value and self.parent.color == other.parent.color
-        return self.value == other.value and self.color == other.color and parents_are_same
+            parents_are_same = self.parent.key == other.parent.key and self.parent.color == other.parent.color
+        return self.key == other.key and self.color == other.color and parents_are_same
 
     def has_children(self) -> bool:
         """ Returns a boolean indicating if the node has children """
@@ -48,11 +48,19 @@ class Node:
         if self.color == NIL:
             return 0
         return sum([int(self.left.color != NIL), int(self.right.color != NIL)])
-
-
+    
+    def in_order(self, arr):
+        ''' (self) -> [Node]
+        Returns an inorder traversal of the tree stemming from this node
+        '''
+        if self.left:
+            self.in_order(self.left)
+        arr.append(self)
+        if self.right:
+            self.in_order(self.right)
 class RedBlackTree:
     # every node has null nodes as children initially, create one such object for easy management
-    NIL_LEAF = Node(value=None, color=NIL, parent=None)
+    NIL_LEAF = Node(key=None, color=NIL, parent=None)
 
     def __init__(self):
         self.count = 0
@@ -68,15 +76,15 @@ class RedBlackTree:
             return list()
         yield from self.root.__iter__()
 
-    def add(self, value, offset):
+    def add(self, key, value):
         if not self.root:
-            self.root = Node(value, color=BLACK, parent=None, left=self.NIL_LEAF, right=self.NIL_LEAF. offset=offset=)
+            self.root = Node(key, color=BLACK, parent=None, left=self.NIL_LEAF, right=self.NIL_LEAF, value=value)
             self.count += 1
             return
-        parent, node_dir = self._find_parent(value)
+        parent, node_dir = self._find_parent(key)
         if node_dir is None:
-            return  # value is in the tree
-        new_node = Node(value=value, color=RED, parent=parent, left=self.NIL_LEAF, right=self.NIL_LEAF)
+            return  # key is in the tree
+        new_node = Node(key=key, color=RED, parent=parent, left=self.NIL_LEAF, right=self.NIL_LEAF)
         if node_dir == 'L':
             parent.left = new_node
         else:
@@ -85,73 +93,73 @@ class RedBlackTree:
         self._try_rebalance(new_node)
         self.count += 1
 
-    def remove(self, value):
+    def remove(self, key):
         """
         Try to get a node with 0 or 1 children.
         Either the node we're given has 0 or 1 children or we get its successor.
         """
-        node_to_remove = self.find_node(value)
+        node_to_remove = self.find_node(key)
         if node_to_remove is None:  # node is not in the tree
             return
         if node_to_remove.get_children_count() == 2:
-            # find the in-order successor and replace its value.
+            # find the in-order successor and replace its key.
             # then, remove the successor
             successor = self._find_in_order_successor(node_to_remove)
-            node_to_remove.value = successor.value  # switch the value
+            node_to_remove.key = successor.key  # switch the key
             node_to_remove = successor
 
         # has 0 or 1 children!
         self._remove(node_to_remove)
         self.count -= 1
 
-    def contains(self, value) -> bool:
-        """ Returns a boolean indicating if the given value is present in the tree """
-        return bool(self.find_node(value))
+    def contains(self, key) -> bool:
+        """ Returns a boolean indicating if the given key is present in the tree """
+        return bool(self.find_node(key))
 
-    def ceil(self, value) -> int or None:
+    def ceil(self, key) -> int or None:
         """
-        Given a value, return the closest value that is equal or bigger than it,
+        Given a key, return the closest key that is equal or bigger than it,
         returning None when no such exists
         """
         if self.root is None: return None
-        last_found_val = None if self.root.value < value else self.root.value
+        last_found_val = None if self.root.key < key else self.root.key
 
         def find_ceil(node):
             nonlocal last_found_val
             if node == self.NIL_LEAF:
                 return None
-            if node.value == value:
-                last_found_val = node.value
-                return node.value
-            elif node.value < value:
+            if node.key == key:
+                last_found_val = node.key
+                return node.key
+            elif node.key < key:
                 # go right
                 return find_ceil(node.right)
             else:
-                # this node is bigger, save its value and go left
-                last_found_val = node.value
+                # this node is bigger, save its key and go left
+                last_found_val = node.key
 
                 return find_ceil(node.left)
         find_ceil(self.root)
         return last_found_val
 
-    def floor(self, value) -> int or None:
+    def floor(self, key) -> int or None:
         """
-        Given a value, return the closest value that is equal or less than it,
+        Given a key, return the closest key that is equal or less than it,
         returning None when no such exists
         """
         if self.root is None: return None
-        last_found_val = None if self.root.value > value else self.root.value
+        last_found_val = None if self.root.key > key else self.root.key
 
         def find_floor(node):
             nonlocal last_found_val
             if node == self.NIL_LEAF:
                 return None
-            if node.value == value:
-                last_found_val = node.value
-                return node.value
-            elif node.value < value:
-                # this node is smaller, save its value and go right, trying to find a cloer one
-                last_found_val = node.value
+            if node.key == key:
+                last_found_val = node.key
+                return node.key
+            elif node.key < key:
+                # this node is smaller, save its key and go right, trying to find a cloer one
+                last_found_val = node.key
 
                 return find_floor(node.right)
             else:
@@ -194,10 +202,10 @@ class RedBlackTree:
                                 ' cannot have children, otherwise the black height of the tree becomes invalid! ')
             if not_nil_child.color == RED:
                 """
-                Swap the values with the red child and remove it  (basically un-link it)
+                Swap the keys with the red child and remove it  (basically un-link it)
                 Since we're a node with one child only, we can be sure that there are no nodes below the red child.
                 """
-                node.value = not_nil_child.value
+                node.key = not_nil_child.key
                 node.left = not_nil_child.left
                 node.right = not_nil_child.right
             else:  # BLACK child
@@ -206,7 +214,7 @@ class RedBlackTree:
 
     def _remove_leaf(self, leaf):
         """ Simply removes a leaf node by making it's parent point to a NIL LEAF"""
-        if leaf.value >= leaf.parent.value:
+        if leaf.key >= leaf.parent.key:
             # in those weird cases where they're equal due to the successor swap
             leaf.parent.right = self.NIL_LEAF
         else:
@@ -378,14 +386,14 @@ class RedBlackTree:
         If there is, rebalance it
         """
         parent = node.parent
-        value = node.value
+        key = node.key
         if (parent is None  # what the fuck? (should not happen)
            or parent.parent is None  # parent is the root
            or (node.color != RED or parent.color != RED)):  # no need to rebalance
             return
         grandfather = parent.parent
-        node_dir = 'L' if parent.value > value else 'R'
-        parent_dir = 'L' if grandfather.value > parent.value else 'R'
+        node_dir = 'L' if parent.key > key else 'R'
+        parent_dir = 'L' if grandfather.key > parent.key else 'R'
         uncle = grandfather.right if parent_dir == 'L' else grandfather.left
         general_direction = node_dir + parent_dir
 
@@ -417,7 +425,7 @@ class RedBlackTree:
         node.parent = new_parent
         if new_parent:
             # Determine the old child's position in order to put node there
-            if new_parent.value > parent_old_child.value:
+            if new_parent.key > parent_old_child.key:
                 new_parent.left = node
             else:
                 new_parent.right = node
@@ -432,7 +440,7 @@ class RedBlackTree:
         parent.right = grandfather
         grandfather.parent = parent
 
-        grandfather.left = old_right  # save the old right values
+        grandfather.left = old_right  # save the old right keys
         old_right.parent = grandfather
 
         if to_recolor:
@@ -448,7 +456,7 @@ class RedBlackTree:
         parent.left = grandfather
         grandfather.parent = parent
 
-        grandfather.right = old_left  # save the old left values
+        grandfather.right = old_left  # save the old left keys
         old_left.parent = grandfather
 
         if to_recolor:
@@ -463,32 +471,32 @@ class RedBlackTree:
             grandfather.color = RED
         self._try_rebalance(grandfather)
 
-    def _find_parent(self, value):
-        """ Finds a place for the value in our binary tree"""
+    def _find_parent(self, key):
+        """ Finds a place for the key in our binary tree"""
         def inner_find(parent):
             """
             Return the appropriate parent node for our new node as well as the side it should be on
             """
-            if value == parent.value:
+            if key == parent.key:
                 return None, None
-            elif parent.value < value:
+            elif parent.key < key:
                 if parent.right.color == NIL:  # no more to go
                     return parent, 'R'
                 return inner_find(parent.right)
-            elif value < parent.value:
+            elif key < parent.key:
                 if parent.left.color == NIL:  # no more to go
                     return parent, 'L'
                 return inner_find(parent.left)
 
         return inner_find(self.root)
 
-    def find_node(self, value):
+    def find_node(self, key):
         def inner_find(root):
             if root is None or root == self.NIL_LEAF:
                 return None
-            if value > root.value:
+            if key > root.key:
                 return inner_find(root.right)
-            elif value < root.value:
+            elif key < root.key:
                 return inner_find(root.left)
             else:
                 return root
@@ -517,10 +525,17 @@ class RedBlackTree:
         _get_sibling(25(C)) => 15(B), 'R'
         """
         parent = node.parent
-        if node.value >= parent.value:
+        if node.key >= parent.key:
             sibling = parent.left
             direction = 'L'
         else:
             sibling = parent.right
             direction = 'R'
         return sibling, direction
+    
+    def inorder(self, arr):
+        ''' (self) -> [node]
+        Returns an inorder traversal of the tree.
+        '''
+        if self.root:
+            self.root.in_order([])
