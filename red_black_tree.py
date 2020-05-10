@@ -50,14 +50,15 @@ class Node:
         return sum([int(self.left.color != NIL), int(self.right.color != NIL)])
     
     def in_order(self, arr):
-        ''' (self) -> [Node]
-        Returns an inorder traversal of the tree stemming from this node
+        ''' (self) -> None
+        Stores an inorder traversal of the tree stemming from this node in arr
         '''
-        if self.left:
-            self.in_order(self.left)
+        if self.left.color != NIL:
+            self.left.in_order(arr)
         arr.append(self)
-        if self.right:
-            self.in_order(self.right)
+        if self.right.color != NIL:
+            self.right.in_order(arr)
+        
 class RedBlackTree:
     # every node has null nodes as children initially, create one such object for easy management
     NIL_LEAF = Node(key=None, color=NIL, parent=None)
@@ -533,9 +534,12 @@ class RedBlackTree:
             direction = 'R'
         return sibling, direction
     
-    def inorder(self, arr):
+    def in_order(self):
         ''' (self) -> [node]
         Returns an inorder traversal of the tree.
         '''
+        arr = []
         if self.root:
-            self.root.in_order([])
+            self.root.in_order(arr)
+
+        return arr
