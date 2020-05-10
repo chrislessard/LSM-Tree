@@ -112,7 +112,6 @@ class SSTable():
             # check if their total size exceeds the threshold
             seg1_size = Path(self.segments_dir_name + seg1).stat().st_size
             seg2_size = Path(self.segments_dir_name + seg2).stat().st_size
-
             total = seg1_size + seg2_size
 
             if total > self.threshold:
@@ -128,9 +127,6 @@ class SSTable():
 
         # the leftover segments wont be ordered properly by name
         self.segments = self.rename_segment_files(result)
-
-        self.current_segment = self.segments[-1]
-        self.current_segment_size = Path(self.segments_dir_name + self.current_segment).stat().st_size
 
     def rename_segment_files(self, result):
         ''' (self) -> [str]
@@ -168,13 +164,32 @@ class SSTable():
         '''
         path1 = self.segments_dir_name + segment1
         path2 = self.segments_dir_name + segment2
+        new_path = self.segments_dir_name + 'temp'
 
-        with open(path1, 'a') as s1:
-            with open(path2, 'r') as s2:
-                for line in s2:
-                    s1.write(line)
+        with open(new_path, 'w') as s0:
+            with open(path1, 'r') as s1:
+                with open(path2, 'r') as s2:
+                    line1, line2 = s1.readline(), s2.readline()
+                    while not (line1 == '' and line2 == ''):
+                        # At the end of the file stream we'll get the empty str
+                        key1, key2 = line1.split(',')[0], line2.split(',')[0]
 
+                        if key1 == '' or key1 == key2:
+                            s0.write(line2)
+                            line1 = s1.readline()
+                            line2 = s2.readline()
+                        elif key2 == '' or key1 < key2:
+                            s0.write(line1)
+                            line1 = s1.readline()
+                        else:
+                            s0.write(line2)
+                            line2 = s2.readline()
+
+        # Remove old segments and replaced first segment with the new one
+        remove_file(path1)
         remove_file(path2)
+        rename_file(new_path, path1)
+
         return segment1
 
     def save_memtable_snapshot(self, name):
@@ -222,6 +237,9 @@ class SSTable():
         return str(key) + ',' + (value) + '\n'
 
     def compact_segment(self, segment_name):
+        ''' (self, str) -> None
+        Compacts the single segment named segment_name.
+        '''
         keys = {}
         with open(self.segments_dir_name + segment_name, 'r') as s:
             for line in s:

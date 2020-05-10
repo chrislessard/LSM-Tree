@@ -219,16 +219,10 @@ class TestDatabase(unittest.TestCase):
         with open(TEST_BASEPATH + segments[0], 'r') as s:
             first_segment_lines = s.readlines()
 
-        expected_result = ['1,test3\n', '2,test4\n', '1,test7\n', '2,test8\n']
+        expected_result = ['1,test7\n', '2,test8\n']
 
         self.assertEqual(first_segment_lines, expected_result)
         self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), False)
-
-        # Test that the db's current segment size tracker is set correctly
-        result_size = len('1,test1\n') * 4
-        self.assertEqual(db.current_segment_size, result_size)
-
-        self.assertEqual(db.current_segment, segments[0])
 
     def test_compact_odd_number_multiple_segments(self):
         '''
@@ -238,19 +232,19 @@ class TestDatabase(unittest.TestCase):
         with open(TEST_BASEPATH + segments[0], 'w') as s:
             s.write('1,test1\n')
             s.write('2,test2\n')
-            s.write('1,test3\n')
+            s.write('4,test9\n')
             s.write('2,test4\n')
 
         with open(TEST_BASEPATH + segments[1], 'w') as s:
             s.write('1,test5\n')
             s.write('2,test6\n')
-            s.write('1,test7\n')
+            s.write('3,test7\n')
             s.write('2,test8\n')
 
         with open(TEST_BASEPATH + segments[2], 'w') as s:
             s.write('1,test9\n')
             s.write('2,testa\n')
-            s.write('1,testb\n')
+            s.write('3,test9\n')
             s.write('2,testc\n')
 
         db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
@@ -262,23 +256,16 @@ class TestDatabase(unittest.TestCase):
             first_segment_lines = s.readlines()
 
         expected_result = [
-            '1,test3\n', 
-            '2,test4\n', 
-            '1,test7\n', 
-            '2,test8\n', 
-            '1,testb\n', 
-            '2,testc\n'
+            '1,test9\n', 
+            '2,testc\n', 
+            '3,test9\n', 
+            '4,test9\n', 
         ]
 
         self.assertEqual(first_segment_lines, expected_result)
 
         self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), False)
         self.assertEqual(os.path.exists(TEST_BASEPATH + segments[2]), False)
-
-        # Test that the db's current segment size tracker is set correctly
-        result_size = len('1,test1\n') * 6
-        self.assertEqual(db.current_segment_size, result_size)
-        self.assertEqual(db.current_segment, segments[0])
 
     def test_compact_multiple_segments_with_threshold(self):
         '''
@@ -287,34 +274,34 @@ class TestDatabase(unittest.TestCase):
         '''
         segments = ['test_file-1', 'test_file-2', 'test_file-3']
         with open(TEST_BASEPATH + segments[0], 'w') as s:
-            s.write('1,test1\n')
-            s.write('2,test2\n')
-            s.write('1,test3\n')
-            s.write('2,test4\n')
+            s.write('1,four\n')
+            s.write('2,bomb\n')
+            s.write('1,john\n')
+            s.write('2,long\n')
 
         with open(TEST_BASEPATH + segments[1], 'w') as s:
-            s.write('1,test5\n')
-            s.write('2,test6\n')
-            s.write('1,test7\n')
-            s.write('2,test8\n')
+            s.write('3,gone\n')
+            s.write('4,girl\n')
+            s.write('3,woot\n')
+            s.write('4,chew\n')
 
         with open(TEST_BASEPATH + segments[2], 'w') as s:
-            s.write('1,test9\n')
-            s.write('2,testa\n')
-            s.write('1,testb\n')
-            s.write('2,testc\n')
+            s.write('5,noob\n')
+            s.write('6,fear\n')
+            s.write('5,love\n')
+            s.write('6,osrs\n')
 
         db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.segments = segments
-        db.threshold = 8 * 4
+        db.threshold = 14 * 2
         db.compact()
 
         self.assertEqual(os.path.exists(TEST_BASEPATH + segments[0]), True)
         self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), True)
         self.assertEqual(os.path.exists(TEST_BASEPATH + segments[2]), False)
 
-        first_seg_expected_vals = ['1,test3\n', '2,test4\n', '1,test7\n', '2,test8\n']
-        scnd_seg_expected_vals = ['1,testb\n', '2,testc\n']
+        first_seg_expected_vals = ['1,john\n', '2,long\n', '3,woot\n', '4,chew\n']
+        scnd_seg_expected_vals = ['5,love\n', '6,osrs\n']
 
         # Check first segment is correct
         with open(TEST_BASEPATH + segments[0], 'r') as s:
@@ -332,10 +319,12 @@ class TestDatabase(unittest.TestCase):
         with open(TEST_BASEPATH + segments[0], 'w') as s:
             s.write('1,test1\n')
             s.write('2,test2\n')
+            s.write('4,test6\n')
 
         with open(TEST_BASEPATH + segments[1], 'w') as s:
             s.write('1,test5\n')
             s.write('2,test6\n')
+            s.write('3,test5\n')
 
         db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.segments = segments
@@ -345,7 +334,7 @@ class TestDatabase(unittest.TestCase):
         with open(TEST_BASEPATH + 'test_file-1', 'r') as s:
             segment_lines = s.readlines()
         
-        expected_contents = ['1,test1\n', '2,test2\n', '1,test5\n', '2,test6\n']
+        expected_contents = ['1,test5\n', '2,test6\n', '3,test5\n', '4,test6\n']
         self.assertEqual(segment_lines, expected_contents)
 
         # Check that the second file was deleted
