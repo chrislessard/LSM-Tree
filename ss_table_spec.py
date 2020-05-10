@@ -30,19 +30,41 @@ class TestDatabase(unittest.TestCase):
 
         self.assertEqual(node1.value, 'test1')
         self.assertEqual(node2.value, 'test2')
+    
+    def test_db_set_flushes_to_disk_past_threshold(self):
+        '''
+        Tests the db_set functionality.
+        '''
+        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.threshold = 10
+        
+        db.db_set('1', 'test1')
+        db.db_set('2', 'test2')
+        db.db_set('3', 'cl')
+
+        with open(TESTPATH, 'r') as s:
+            lines = s.readlines()
+        
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(lines[0].strip(), '1,test1')
+
+        node2 = db.memtable.find_node('2')
+        self.assertEqual(node2.value, 'test2')
 
     # def test_db_set_stores_pair_in_memtable(self):
     #     '''
     #     Tests the db_set functionality.
     #     '''
     #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-        
+            # with open(TESTPATH, 'r') as s:
+            # line1 = s.readline().strip()
+            # line2 = s.readline().strip()
     #     db.db_set('1', 'test1')
     #     db.db_set('2', 'test2')
 
-    #     with open(TESTPATH, 'r') as s:
-    #         line1 = s.readline().strip()
-    #         line2 = s.readline().strip()
+        with open(TESTPATH, 'r') as s:
+            line1 = s.readline().strip()
+            line2 = s.readline().strip()
 
     #     self.assertEqual(line1, '1,test1')
     #     self.assertEqual(line2, '2,test2')

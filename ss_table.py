@@ -36,7 +36,7 @@ class SSTable():
         additional_size = len(key) + len(value)
         if self.current_segment_size + additional_size > self.threshold:
             # Flush memtable to disk
-            self.flush_memtable(self.full_path)
+            self.flush_memtable(self.full_path())
             self.memtable = rbt.RedBlackTree()
 
             # Clear the log file
