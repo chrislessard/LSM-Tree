@@ -51,24 +51,6 @@ class TestDatabase(unittest.TestCase):
         node2 = db.memtable.find_node('2')
         self.assertEqual(node2.value, 'test2')
 
-    # def test_db_set_stores_pair_in_memtable(self):
-    #     '''
-    #     Tests the db_set functionality.
-    #     '''
-    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-            # with open(TESTPATH, 'r') as s:
-            # line1 = s.readline().strip()
-            # line2 = s.readline().strip()
-    #     db.db_set('1', 'test1')
-    #     db.db_set('2', 'test2')
-
-        with open(TESTPATH, 'r') as s:
-            line1 = s.readline().strip()
-            line2 = s.readline().strip()
-
-    #     self.assertEqual(line1, '1,test1')
-    #     self.assertEqual(line2, '2,test2')
-
     def test_in_order_traversal(self):
         db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.memtable.add('chris', 'lessard')
@@ -92,54 +74,64 @@ class TestDatabase(unittest.TestCase):
 
         with open(TESTPATH, 'r') as s:
             lines = s.readlines()
-        
+
         expected_lines = ['chris,lessard\n', 'daniel,lessard\n']
         self.assertEqual(lines, expected_lines)
 
-    # # db_get
-    # def test_db_get_retrieve_val(self):
-    #     '''
-    #     Tests the db_get functionality.
-    #     '''
-    #     with open(TESTPATH, 'w') as s:
-    #         s.write('1,test1\n')
-    #         s.write('2,test2\n')
+    # db_get
+    def test_db_get_single_val_retrieval(self):
+        '''
+        Tests the retrieval of a single value written into the db
+        '''
+        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.db_set('chris', 'lessard')
+        val = db.db_get('chris')
 
-    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        self.assertEqual(val, 'lessard')
 
-    #     self.assertEqual(db.db_get('1'), 'test1')
-    #     self.assertEqual(db.db_get('2'), 'test2')
-    #     self.assertEqual(db.db_get('3'), None)
+    def test_db_get_retrieve_val(self):
+        '''
+        Tests the db_get functionality.
+        '''
+        with open(TESTPATH, 'w') as s:
+            s.write('1,test1\n')
+            s.write('2,test2\n')
+
+        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+
+        self.assertEqual(db.db_get('1'), 'test1')
+        self.assertEqual(db.db_get('2'), 'test2')
+        self.assertEqual(db.db_get('3'), None)
     
-    # def test_db_get_retrieve_most_recent_val(self):
-    #     '''
-    #     Tests that db_get retrieves the most recent key value.
-    #     '''
-    #     with open(TESTPATH, 'w') as s:
-    #         s.write('1,test1\n')
-    #         s.write('2,test2\n')
-    #         s.write('1,new value\n')
+    def test_db_get_retrieve_most_recent_val(self):
+        '''
+        Tests that db_get retrieves the most recent key value.
+        '''
+        with open(TESTPATH, 'w') as s:
+            s.write('1,test1\n')
+            s.write('2,test2\n')
+            s.write('1,new value\n')
         
-    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-    #     self.assertEqual(db.db_get('1'), 'new value')
+        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        self.assertEqual(db.db_get('1'), 'new value')
     
-    # def test_db_get_retrieve_val_multiple_segments(self):
-    #     '''
-    #     Tests the db_get functionality.
-    #     '''
-    #     with open(TEST_BASEPATH + 'test_file-1', 'w') as s:
-    #         s.write('1,test1\n')
-    #         s.write('2,test2\n')
+    def test_db_get_retrieve_val_multiple_segments(self):
+        '''
+        Tests the db_get functionality.
+        '''
+        with open(TEST_BASEPATH + 'test_file-1', 'w') as s:
+            s.write('1,test1\n')
+            s.write('2,test2\n')
 
-    #     with open(TEST_BASEPATH + 'test_file-2', 'w') as s:
-    #         s.write('3,test3\n')
-    #         s.write('4,test4\n')
+        with open(TEST_BASEPATH + 'test_file-2', 'w') as s:
+            s.write('3,test3\n')
+            s.write('4,test4\n')
 
-    #     db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-    #     db.segments.append('test_file-2')
+        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.segments.append('test_file-2')
 
-    #     self.assertEqual(db.db_get('1'), 'test1')
-    #     self.assertEqual(db.db_get('3'), 'test3')
+        self.assertEqual(db.db_get('1'), 'test1')
+        self.assertEqual(db.db_get('3'), 'test3')
 
     # # load_index
     # def test_load_index_correctly_creates_hash(self):

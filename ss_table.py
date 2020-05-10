@@ -62,7 +62,12 @@ class SSTable():
         ''' (self, str) -> None
         Retrieve the value associated with key in the db
         '''
-        offset = self.is_memtableed(key)
+        # Attempts to find the key in the memtable first
+        memtable_result = self.memtable.find_node(key)
+
+        if memtable_result:
+            return memtable_result.value
+
         segments = self.segments[:]
 
         while len(segments):
@@ -71,18 +76,10 @@ class SSTable():
 
             val = None
             with open(segment_path, 'r') as s:
-                # Todo: generalize offset across all segments
-                if offset and segment == self.current_segment:
-                    s.seek(offset)
-                    line = s.readline()
+                for line in s:
                     k, v = line.split(',')
                     if k == key:
                         val = v.strip()
-                else:
-                    for line in s:
-                        k, v = line.split(',')
-                        if k == key:
-                            val = v.strip()
             if val:
                 return val
 
