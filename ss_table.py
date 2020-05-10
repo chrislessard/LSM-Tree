@@ -64,7 +64,6 @@ class SSTable():
         traversal = self.memtable.in_order()
         with open(path, 'w') as s:
             for node in traversal:
-                print(node, node.key, node.value)
                 log = self.log_entry(node.key, node.value)
                 s.write(log)
 
