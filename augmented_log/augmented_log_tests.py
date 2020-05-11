@@ -328,5 +328,15 @@ class TestAugmentedLog(unittest.TestCase):
         result = db.rename_segments(segments)
         self.assertEqual(result, expected_result)
 
+    def test_set_threshold(self):
+        '''
+        Tests that the user can reset the threshold to the value they want.
+        '''
+        db = AugmentedLog(TEST_FILENAME, TEST_BASEPATH)
+        db.threshold = 500
+        db.set_threshold(1000)
+
+        self.assertEqual(db.threshold, 1000)
+
 if __name__ == '__main__':
     unittest.main()

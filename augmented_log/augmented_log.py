@@ -73,6 +73,13 @@ class AugmentedLog():
             if val:
                 return val
 
+    def set_threshold(self, threshold):
+        ''' (self, int) -> None
+        Sets the threshold - the point at which a new segment is created
+        for the database. The argument, threshold, is measured in bytes.
+        '''
+        self.threshold = threshold
+
     def is_indexed(self, key):
         ''' (self, int) -> Bool
         Checks whether key is stored in the DB's index
