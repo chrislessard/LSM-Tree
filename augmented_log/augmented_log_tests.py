@@ -4,7 +4,7 @@ from pathlib import Path
 from augmented_log import AugmentedLog
 
 TEST_FILENAME = 'test_file-1'
-TEST_BASEPATH = './augmented_log/test-segments/'
+TEST_BASEPATH = 'test-segments/'
 TESTPATH = TEST_BASEPATH + TEST_FILENAME
 
 class TestAugmentedLog(unittest.TestCase):

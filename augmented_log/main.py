@@ -1,4 +1,4 @@
-import database as database
+from augmented_log import AugmentedLog
 
 BASEPATH = 'segments/'
 FILENAME = 'database-1'
@@ -11,6 +11,7 @@ def main():
         'Commands: ',
         'store {key} {data}',
         'get {key}',
+        'compact_segments'
         'load_index',
         'save_index_snapshot {filename}',
         'load_index_snapshot {filename}',
@@ -18,7 +19,7 @@ def main():
         'exit'
     ]
 
-    db = database.Database(FILENAME, BASEPATH)
+    db = AugmentedLog(FILENAME, BASEPATH)
 
     print('\n\t'.join(usage_msg))
 
@@ -27,11 +28,16 @@ def main():
         cmd = input('$ ').lower().split(' ')
 
         if cmd[0] == 'store':
-            key, val = cmd[1], cmd[2]
+            key, val = cmd[1], ' '.join(cmd[2:])
             db.db_set(key, val)
+            print('Stored', key, 'with value', val, '\n')
         elif cmd[0] == 'get':
             key = cmd[1]
             print(db.db_get(key), '\n')
+        elif cmd[0] == 'compact_segments':
+            print('\nCompacting segments on disk ...')
+            db.compact()
+            print('Finished compacting segments.')
         elif cmd[0] == 'load_index':
             db.load_index()
         elif cmd[0] == 'save_index_snapshot':
