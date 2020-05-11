@@ -59,7 +59,7 @@ class AugmentedLog():
             val = None
             with open(segment_path, 'r') as s:
                 # Todo: generalize offset across all segments
-                if offset and segment == self.current_segment:
+                if offset:
                     s.seek(offset)
                     line = s.readline()
                     k, v = line.split(',')
