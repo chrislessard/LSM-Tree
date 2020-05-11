@@ -19,7 +19,9 @@ class SSTable():
         self.segments = []
         self.current_segment_size = 0
 
+        # Default threshold is 1mb
         self.threshold = 1000000
+
         self.memtable = rbt.RedBlackTree()
         self.memtable_bkup = memtable_bkup_name
 

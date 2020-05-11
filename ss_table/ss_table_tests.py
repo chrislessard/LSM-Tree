@@ -4,7 +4,7 @@ from pathlib import Path
 import ss_table as ss
 
 TEST_FILENAME = 'test_file-1'
-TEST_BASEPATH = './ss_table/test-segments/'
+TEST_BASEPATH = 'test-segments/'
 BKUP_NAME = 'test_backup'
 TESTPATH = TEST_BASEPATH + TEST_FILENAME
 
