@@ -29,34 +29,24 @@ class BasicLog():
                     val = v.strip()
         return val
 
-def main():
-    '''
-    Run the database interface.
-    '''
-    usage_msg = [
-        'Please select an option: ',
-        'store {key} {data}',
-        'get {key}',
-        'exit'
-    ]
+def benchmark_store(db):
+    for i in range(10000):
+        db.db_set('chris', 'lessard')
 
-    db = BasicLog(FILENAME)
-
-    while True:
-        print('\n\t'.join(usage_msg))
-        cmd = input('$ ').lower().split(' ')
-
-        if cmd[0] == 'store':
-            key, val = cmd[1], ' '.join(cmd[2:])
-            db.db_set(key, val)
-            print('Stored "', key, '" with value "', val, '"\n')
-        elif cmd[0] == 'get':
-            key = cmd[1]
-            print(db.db_get(key))
-        elif cmd[0] == 'exit':
-            break
-        else:
-            print('Invalid command.')
+def benchmark_get(db):
+    db.db_get('chris')
 
 if __name__ == "__main__":
-    main()
+    # main()
+
+    import timeit
+    db = BasicLog(FILENAME)
+
+    for i in range(500000):
+        db.db_set('chris', 'lessard')
+
+    print(timeit.timeit("benchmark_store(db)", setup="from __main__ import benchmark_store", number=1))
+
+    db.db_set('charles', 'lessard')
+
+    print(timeit.timeit("benchmark_get(db)", setup="from __main__ import benchmark_store", number=1))
