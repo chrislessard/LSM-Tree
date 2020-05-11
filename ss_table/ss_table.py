@@ -130,6 +130,13 @@ class SSTable():
         # the leftover segments wont be ordered properly by name
         self.segments = self.rename_segment_files(result)
 
+    def set_threshold(self, threshold):
+        ''' (self, int) -> None
+        Sets the threshold - the point at which a new segment is created
+        for the database. The argument, threshold, is measured in bytes.
+        '''
+        self.threshold = threshold
+
     def rename_segment_files(self, result):
         ''' (self) -> [str]
         Renames the segment files on disk to make sure that their suffixes are 

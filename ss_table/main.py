@@ -15,6 +15,7 @@ def main():
         'compact_segments',
         'save_index_snapshot {filename}',
         'load_index_snapshot {filename}',
+        'set_threshold {number of bytes}',
         'help',
         'exit'
     ]
@@ -41,6 +42,11 @@ def main():
         elif cmd[0] == 'load_index_snapshot':
             name = cmd[1]
             db.load_index_snapshot(name)
+        elif cmd[0] == 'set_threshold':
+            threshold = int(cmd[1])
+            print('\nSetting new threshold ...')
+            db.set_threshold(threshold)
+            print('Done\n')
         elif cmd[0] == 'help':
             print('\n\t'.join(usage_msg))
         elif cmd[0] == 'exit':

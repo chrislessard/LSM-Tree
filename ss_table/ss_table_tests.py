@@ -1,7 +1,7 @@
 import unittest
 import os
 from pathlib import Path
-import ss_table as ss
+from ss_table import SSTable
 
 TEST_FILENAME = 'test_file-1'
 TEST_BASEPATH = 'test-segments/'
@@ -22,7 +22,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests the db_set functionality.
         '''
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         
         db.db_set('1', 'test1')
         db.db_set('2', 'test2')
@@ -37,7 +37,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests the db_set functionality.
         '''
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.threshold = 10
         
         db.db_set('1', 'test1')
@@ -54,7 +54,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(node2.value, 'test2')
 
     def test_in_order_traversal(self):
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.memtable.add('chris', 'lessard')
         db.memtable.add('daniel', 'lessard')
         db.memtable.add('debra', 'brown')
@@ -69,7 +69,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that the memtable can be flushed to disk
         '''
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.memtable.add('chris', 'lessard')
         db.memtable.add('daniel', 'lessard')
         db.flush_memtable(TESTPATH)
@@ -85,7 +85,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests the retrieval of a single value written into the db
         '''
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.db_set('chris', 'lessard')
         val = db.db_get('chris')
 
@@ -95,7 +95,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests the db_get functionality when the db threshold is low.
         '''
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.threshold = 20
         db.db_set('chris','lessard')
         db.db_set('daniel','lessard')
@@ -111,7 +111,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests the db_get functionality when the key has not been stored in the db.
         '''
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.threshold = 20
         db.db_set('chris','lessard')
         db.db_set('daniel','lessard')
@@ -124,7 +124,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that db_get retrieves the most recent key value.
         '''
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
 
         db.db_set('chris', 'lessard')
         db.db_set('chris', 'martinez')
@@ -134,7 +134,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that db_get retrieves the most recent key value.
         '''
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.threshold = 10
 
         db.db_set('chris', 'lessard')
@@ -145,7 +145,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests the db_get functionality.
         '''
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.threshold = 10
 
         db.db_set('chris', 'lessard')
@@ -164,7 +164,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that new segments are created and used when the threshold is reached.
         '''
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.threshold = 10
         db.db_set('abc', 'cba')
         db.db_set('def', 'fed') # This will cross the threshold
@@ -188,7 +188,7 @@ class TestDatabase(unittest.TestCase):
             s.write('2,test8\n')
             s.write('3,test9\n')
 
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.compact_segment(TEST_FILENAME)
 
         with open(TEST_BASEPATH + TEST_FILENAME, 'r') as s:
@@ -213,7 +213,7 @@ class TestDatabase(unittest.TestCase):
             s.write('1,test7\n')
             s.write('2,test8\n')
 
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.segments = segments
         db.compact()
 
@@ -249,7 +249,7 @@ class TestDatabase(unittest.TestCase):
             s.write('3,test9\n')
             s.write('2,testc\n')
 
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.segments = segments
         db.compact()
 
@@ -293,7 +293,7 @@ class TestDatabase(unittest.TestCase):
             s.write('5,love\n')
             s.write('6,osrs\n')
 
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.segments = segments
         db.threshold = 14 * 2
         db.compact()
@@ -328,7 +328,7 @@ class TestDatabase(unittest.TestCase):
             s.write('2,test6\n')
             s.write('3,test5\n')
 
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.segments = segments
 
         db.merge_segments(segments[0], segments[1])
@@ -349,9 +349,19 @@ class TestDatabase(unittest.TestCase):
         '''
         segments = ['segment-1', 'segment-4', 'segment-6', 'segment-7']
         expected_result = ['segment-1', 'segment-2', 'segment-3', 'segment-4']
-        db = ss.SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         result = db.rename_segments(segments)
         self.assertEqual(result, expected_result)
+
+    def test_set_threshold(self):
+        '''
+        Tests that the user can reset the threshold to the value they want.
+        '''
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.threshold = 500
+        db.set_threshold(1000)
+
+        self.assertEqual(db.threshold, 1000)
 
 if __name__ == '__main__':
     unittest.main()
