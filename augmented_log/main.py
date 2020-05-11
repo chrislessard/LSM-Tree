@@ -11,11 +11,11 @@ def main():
         'Commands: ',
         'store {key} {data}',
         'get {key}',
-        'compact_segments'
+        'compact_segments',
         'load_index',
         'save_index_snapshot {filename}',
         'load_index_snapshot {filename}',
-        'set_treshold {number of bytes}'
+        'set_treshold {number of bytes}',
         'help',
         'exit'
     ]
@@ -47,11 +47,11 @@ def main():
         elif cmd[0] == 'load_index_snapshot':
             name = cmd[1]
             db.load_index_snapshot(name)
-         elif cmd[0] == 'set_treshold':
-             threshold = int(cmd[1])
-             print('\nSetting new threshold ...')
-             db.set_treshold(threshold)
-             print('Done\n')
+        elif cmd[0] == 'set_treshold':
+            threshold = int(cmd[1])
+            print('\nSetting new threshold ...')
+            db.set_treshold(threshold)
+            print('Done\n')
         elif cmd[0] == 'help':
             print('\n\t'.join(usage_msg))
         elif cmd[0] == 'exit':
