@@ -226,3 +226,30 @@ class AugmentedLog():
             for key, val in keys.items():
                 log = self.log_entry(key, val.strip())
                 s.write(log)
+
+
+def benchmark_get(db):
+    db.db_get('debra')
+
+if __name__ == "__main__":
+    # main()
+
+    import timeit
+
+    setup = """
+from __main__ import benchmark_get
+from __main__ import AugmentedLog
+db = AugmentedLog('test_file-1', 'segments/')
+for i in range(100000):
+    db.db_set('chris', 'lessard')
+db.db_set('debra', 'brown')
+db.db_set('daniel', 'lessard')
+"""
+
+    benchmark_store_str = """benchmark_store(db)"""
+    benchmark_get_str = """
+benchmark_get(db)
+"""
+
+    #print('Store benchmark:', timeit.timeit(benchmark_store_str, setup=setup, number=1))
+    print('Get benchmark:', timeit.timeit(benchmark_get_str, setup=setup, number=1))

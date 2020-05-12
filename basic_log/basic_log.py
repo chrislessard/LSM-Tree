@@ -30,23 +30,27 @@ class BasicLog():
         return val
 
 def benchmark_store(db):
-    for i in range(10000):
+    for i in range(100000):
         db.db_set('chris', 'lessard')
 
 def benchmark_get(db):
-    db.db_get('chris')
+    db.db_get('daniel')
 
 if __name__ == "__main__":
-    # main()
-
     import timeit
-    db = BasicLog(FILENAME)
 
-    for i in range(500000):
-        db.db_set('chris', 'lessard')
+    setup = """
+from __main__ import benchmark_store 
+from __main__ import benchmark_get
+from __main__ import BasicLog
+db = BasicLog('database.bin')
+"""
 
-    print(timeit.timeit("benchmark_store(db)", setup="from __main__ import benchmark_store", number=1))
+    benchmark_store_str = """benchmark_store(db)"""
+    benchmark_get_str = """
+db.db_set('daniel', 'lessard')
+benchmark_get(db)
+"""
 
-    db.db_set('charles', 'lessard')
-
-    print(timeit.timeit("benchmark_get(db)", setup="from __main__ import benchmark_store", number=1))
+    print('Store benchmark:', timeit.timeit(benchmark_store_str, setup=setup, number=1))
+    print('Get benchmark:', timeit.timeit(benchmark_get_str, setup=setup, number=1))

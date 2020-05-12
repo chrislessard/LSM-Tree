@@ -66,7 +66,7 @@ class SSTable():
         '''
         # Attempts to find the key in the memtable first
         memtable_result = self.memtable.find_node(key)
-
+        
         if memtable_result:
             return memtable_result.value
 
@@ -265,3 +265,29 @@ class SSTable():
         Returns the full path to the memtable backup.
         '''
         return self.segments_dir_name + self.memtable_bkup
+
+def benchmark_store(db):
+    for i in range(100000):
+        db.db_set('chris', 'lessard')
+
+def benchmark_get(db):
+    db.db_get('daniel')
+
+if __name__ == "__main__":
+    import timeit
+
+    setup = """
+from __main__ import benchmark_store 
+from __main__ import benchmark_get
+from __main__ import SSTable
+db = SSTable('test_file-1', 'segments/', 'bkup')
+"""
+
+    benchmark_store_str = """benchmark_store(db)"""
+    benchmark_get_str = """
+db.db_set('daniel', 'lessard')
+benchmark_get(db)
+"""
+
+    print('Store benchmark:', timeit.timeit(benchmark_store_str, setup=setup, number=1))
+    print('Get benchmark:', timeit.timeit(benchmark_get_str, setup=setup, number=1))
