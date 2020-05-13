@@ -1,1 +1,4 @@
 *.pyc
+basic_log/*.bin
+augmented_log/segments/*
+sstable/segments/*
