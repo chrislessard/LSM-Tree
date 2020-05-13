@@ -14,7 +14,7 @@ All versions of the store will create csv files on disk. These represent the per
 
 ### basic_log
 
-This is an extremely key value store, supporting two commands:
+This is an extremely simple key value store, supporting two commands:
 
 1. store {key} {data} : store the pair (key, value) in the database
 2. get {key} : retrieve the most recent value on disk associated with key
@@ -68,3 +68,9 @@ In the basic implementation of the key value store, we wrote to disk as soon as 
 ### Adding a sparse index to the memory table
 
 We can further improve the SSTable by adding a sparse index. It would only store some keys. If we cant find a value we're searching for in the index, we could leverage it to determine the appropriate range ('Christina' would be stored between 'Chris' and 'Daniel', for instance). Using the lower part of this range, we could read into disk and begin scanning through to the other boundary, since we know that the keys are sorted. The RedBlack tree supports these queries in its ciel and floor functions.
+
+### Using a singleton pattern to keep a single fileIO stream
+
+Time wise, there is a huge debt in that writes open a new fileIO time for each transaction. When lots of writes or reads happen in a row, this incurs a lot of unecessary waiting time for hte user. The SSTable also suffers from this since it uses an append-only log to backup the memtable before a segment flush occurs. 
+
+It would be smart to alleviate these situations by implementing a singleton pattern that returns a single open file stream to benefit the writers. This would need to be handled with care in an asynchronous system, but for our purposes it could be implemented fairly efficiently.
