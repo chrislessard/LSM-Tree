@@ -1,11 +1,21 @@
 from pathlib import Path
 from os import remove as remove_file, rename as rename_file
 from red_black_tree import RedBlackTree
+from append_log import AppendLog
 import pickle
 
 class SSTable():
     def __init__(self, database_name, segments_directory, memtable_log):
+        ''' (self, str, str, str) -> SSTable
+
+        Initialize a new SSTable with:
+
+        - A first segment called database_name
+        - A segments directory called segments_directory
+        - A memtable log called memtable_log
+        '''
         self.segments_directory = segments_directory
+        self.memtable_log = memtable_log
         self.current_segment = database_name
         self.segments = []
 
@@ -13,7 +23,6 @@ class SSTable():
         self.threshold = 1000000
 
         self.memtable = RedBlackTree()
-        self.memtable_bkup = memtable_log
 
         if not (Path(segments_directory).exists() and Path(segments_directory).is_dir):
             Path(segments_directory).mkdir()
@@ -32,8 +41,7 @@ class SSTable():
             self.memtable = RedBlackTree()
 
             # Clear the log file
-            with open(self.memtable_bkup_path(), 'w') as s:
-                s.truncate(0)
+            self.memtable_bkup().clear()
 
             # Update bookkeeping metadata
             self.segments.append(self.current_segment)
@@ -42,9 +50,8 @@ class SSTable():
             self.memtable.total_bytes = 0
 
         # Write to memtable backup
-        with open(self.memtable_bkup_path(), 'a') as s:
-            log = self.log_entry(key, value)
-            s.write(log)
+        log = self.log_entry(key, value)
+        self.memtable_bkup().write(log)
 
         # Write to memtable
         self.memtable.add(key, value)
@@ -250,11 +257,12 @@ class SSTable():
                 log = self.log_entry(key, val.strip())
                 s.write(log)
 
-    def memtable_bkup_path(self):
+    def memtable_bkup(self):
         ''' (self) -> str
         Returns the full path to the memtable backup.
         '''
-        return self.segments_directory + self.memtable_bkup
+        file_path = self.segments_directory + self.memtable_log
+        return AppendLog.instance(file_path)
 
 def benchmark_store(db):
     for i in range(100000):
