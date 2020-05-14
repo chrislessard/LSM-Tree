@@ -1,7 +1,6 @@
 from pathlib import Path
-from os import remove as remove_file
-from os import rename as rename_file
-import red_black_tree as rbt
+from os import remove as remove_file, rename as rename_file
+from red_black_tree import RedBlackTree
 import pickle
 
 class SSTable():
@@ -9,12 +8,11 @@ class SSTable():
         self.segments_directory = segments_directory
         self.current_segment = database_name
         self.segments = []
-        self.current_segment_size = 0
 
         # Default threshold is 1mb
         self.threshold = 1000000
 
-        self.memtable = rbt.RedBlackTree()
+        self.memtable = RedBlackTree()
         self.memtable_bkup = memtable_log
 
         if not (Path(segments_directory).exists() and Path(segments_directory).is_dir):
@@ -28,10 +26,10 @@ class SSTable():
         '''
         # Check if we need a new segment
         additional_size = len(key) + len(value)
-        if self.current_segment_size + additional_size > self.threshold:
+        if self.memtable.total_bytes + additional_size > self.threshold:
             # Flush memtable to disk
             self.flush_memtable(self.full_path())
-            self.memtable = rbt.RedBlackTree()
+            self.memtable = RedBlackTree()
 
             # Clear the log file
             with open(self.memtable_bkup_path(), 'w') as s:
@@ -41,7 +39,7 @@ class SSTable():
             self.segments.append(self.current_segment)
             new_seg_name = self.new_segment_name()
             self.current_segment = new_seg_name
-            self.current_segment_size = 0
+            self.memtable.total_bytes = 0
 
         # Write to memtable backup
         with open(self.memtable_bkup_path(), 'a') as s:
@@ -50,7 +48,7 @@ class SSTable():
 
         # Write to memtable
         self.memtable.add(key, value)
-        self.current_segment_size += additional_size
+        self.memtable.total_bytes += additional_size
 
     def db_get(self, key):
         ''' (self, str) -> None

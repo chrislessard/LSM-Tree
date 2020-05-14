@@ -1,5 +1,6 @@
 """
 A classic (not left-leaning) Red-Black Tree implementation, supporting addition and deletion.
+Augmented to allowed updates and inorder traversal.
 Original source: https://github.com/stanislavkozlovski/Red-Black-Tree/blob/master/rb_tree.py
 """
 
@@ -71,6 +72,9 @@ class RedBlackTree:
             'L': self._right_rotation,
             'R': self._left_rotation
         }
+        # Represents the total amount of bytes taken up by the key-value store
+        # takign into account padding characters , and \n
+        self.total_bytes = 0
 
     def __iter__(self):
         if not self.root:

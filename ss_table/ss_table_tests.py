@@ -169,7 +169,7 @@ class TestDatabase(unittest.TestCase):
         db.db_set('abc', 'cba')
         db.db_set('def', 'fed') # This will cross the threshold
 
-        self.assertEqual(db.current_segment_size, 6)
+        self.assertEqual(db.memtable.total_bytes, 6)
         self.assertEqual(db.current_segment, 'test_file-2')
 
     # # compaction
