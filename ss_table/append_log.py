@@ -19,7 +19,7 @@ class Singleton:
 class AppendLog:
     def __init__(self, filename):
         self.filename = filename
-        self.stream = open(filename, 'w')
+        self.stream = open(filename, 'a')
 
     def write(self, val):
         try:
@@ -30,5 +30,6 @@ class AppendLog:
 
     def clear(self):
         self.stream.close()
+        # Clearing the stream should clear the current file contents
         self.stream = open(self.filename, 'w')
 
