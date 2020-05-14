@@ -5,16 +5,8 @@ import red_black_tree as rbt
 import pickle
 
 class SSTable():
-    current_segment = None
-    current_segment_size = None
-    segments = None
-    threshold = None
-
-    memtable = None
-    memtable_bkup = None
-
-    def __init__(self, database_name, segments_dir_name, memtable_bkup_name):
-        self.segments_dir_name = segments_dir_name
+    def __init__(self, database_name, segments_directory, memtable_log):
+        self.segments_directory = segments_directory
         self.current_segment = database_name
         self.segments = []
         self.current_segment_size = 0
@@ -23,10 +15,10 @@ class SSTable():
         self.threshold = 1000000
 
         self.memtable = rbt.RedBlackTree()
-        self.memtable_bkup = memtable_bkup_name
+        self.memtable_bkup = memtable_log
 
-        if not (Path(segments_dir_name).exists() and Path(segments_dir_name).is_dir):
-            Path(segments_dir_name).mkdir()
+        if not (Path(segments_directory).exists() and Path(segments_directory).is_dir):
+            Path(segments_directory).mkdir()
         else:
             pass
 
@@ -73,7 +65,7 @@ class SSTable():
         segments = self.segments[:]
         while len(segments):
             segment = segments.pop()
-            segment_path = self.segments_dir_name + segment
+            segment_path = self.segments_directory + segment
 
             val = None
             with open(segment_path, 'r') as s:
@@ -112,8 +104,8 @@ class SSTable():
             seg1, seg2 = segments.pop(0), segments.pop(0)
 
             # check if their total size exceeds the threshold
-            seg1_size = Path(self.segments_dir_name + seg1).stat().st_size
-            seg2_size = Path(self.segments_dir_name + seg2).stat().st_size
+            seg1_size = Path(self.segments_directory + seg1).stat().st_size
+            seg2_size = Path(self.segments_directory + seg2).stat().st_size
             total = seg1_size + seg2_size
 
             if total > self.threshold:
@@ -144,8 +136,8 @@ class SSTable():
         '''
         corrected_names = self.rename_segments(result)
         for idx, segment in enumerate(result):
-            old_path = self.segments_dir_name + segment
-            new_path = self.segments_dir_name + corrected_names[idx]
+            old_path = self.segments_directory + segment
+            new_path = self.segments_directory + corrected_names[idx]
             rename_file(old_path, new_path)
 
         return corrected_names
@@ -171,9 +163,9 @@ class SSTable():
         segment 2, erases the second segment file and returns the name of the
         first segment. 
         '''
-        path1 = self.segments_dir_name + segment1
-        path2 = self.segments_dir_name + segment2
-        new_path = self.segments_dir_name + 'temp'
+        path1 = self.segments_directory + segment1
+        path2 = self.segments_directory + segment2
+        new_path = self.segments_directory + 'temp'
 
         with open(new_path, 'w') as s0:
             with open(path1, 'r') as s1:
@@ -227,7 +219,7 @@ class SSTable():
 
     # Helper methods
     def full_path(self):
-        return self.segments_dir_name + self.current_segment
+        return self.segments_directory + self.current_segment
 
     def new_segment_name(self):
         ''' (self) -> None
@@ -250,12 +242,12 @@ class SSTable():
         Compacts the single segment named segment_name.
         '''
         keys = {}
-        with open(self.segments_dir_name + segment_name, 'r') as s:
+        with open(self.segments_directory + segment_name, 'r') as s:
             for line in s:
                 k, v = line.split(',')
                 keys[k] = v
 
-        with open(self.segments_dir_name + segment_name, 'w') as s:
+        with open(self.segments_directory + segment_name, 'w') as s:
             for key, val in keys.items():
                 log = self.log_entry(key, val.strip())
                 s.write(log)
@@ -264,7 +256,7 @@ class SSTable():
         ''' (self) -> str
         Returns the full path to the memtable backup.
         '''
-        return self.segments_dir_name + self.memtable_bkup
+        return self.segments_directory + self.memtable_bkup
 
 def benchmark_store(db):
     for i in range(100000):
