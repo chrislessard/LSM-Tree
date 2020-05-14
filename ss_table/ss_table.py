@@ -21,13 +21,10 @@ class SSTable():
 
         # Default threshold is 1mb
         self.threshold = 1000000
-
         self.memtable = RedBlackTree()
 
         if not (Path(segments_directory).exists() and Path(segments_directory).is_dir):
             Path(segments_directory).mkdir()
-        else:
-            pass
 
     def db_set(self, key, value):
         ''' (self, str, str) -> None
@@ -50,7 +47,7 @@ class SSTable():
             self.memtable.total_bytes = 0
 
         # Write to memtable backup
-        log = self.log_entry(key, value)
+        log = self.as_log_entry(key, value)
         self.memtable_bkup().write(log)
 
         # Write to memtable
@@ -77,21 +74,7 @@ class SSTable():
                 for line in s:
                     k, v = line.split(',')
                     if k == key:
-                        val = v.strip()
-            if val:
-                return val
-
-    def load_memtable(self):
-        ''' (self) -> None
-        Parses the database file and loads keys into the memtable. 
-        Only retrieves values for the current segment. Warning, this is really slow!
-        '''
-        byte_count = 0
-        with open(self.full_path(), 'r') as s:
-            for line in s:
-                k, v = line.split(',')
-                self.memtable[k] = byte_count
-                byte_count += len(line)
+                        return v.strip()
 
     def compact(self):
         ''' (self) -> None
@@ -133,34 +116,6 @@ class SSTable():
         for the database. The argument, threshold, is measured in bytes.
         '''
         self.threshold = threshold
-
-    def rename_segment_files(self, result):
-        ''' (self) -> [str]
-        Renames the segment files on disk to make sure that their suffixes are 
-        in proper ascending order.
-        '''
-        corrected_names = self.rename_segments(result)
-        for idx, segment in enumerate(result):
-            old_path = self.segments_directory + segment
-            new_path = self.segments_directory + corrected_names[idx]
-            rename_file(old_path, new_path)
-
-        return corrected_names
-
-    def rename_segments(self, seg_list):
-        ''' (self, [str]) -> [str]
-        Renames the segments to make sure that their suffixes are in proper
-        ascending order.
-        '''
-        result = []
-
-        for i in range(len(seg_list)):
-            name = seg_list[i]
-            name_decomp = name.split('-')
-            name_decomp[-1] = str(i + 1)
-            result.append('-'.join(name_decomp))
-
-        return result
 
     def merge_segments(self, segment1, segment2):
         ''' (self, str, str) -> str
@@ -219,7 +174,7 @@ class SSTable():
         traversal = self.memtable.in_order()
         with open(path, 'w') as s:
             for node in traversal:
-                log = self.log_entry(node.key, node.value)
+                log = self.as_log_entry(node.key, node.value)
                 s.write(log)
 
     # Helper methods
@@ -234,8 +189,36 @@ class SSTable():
         new_number = str(int(number) + 1)
 
         return '-'.join([name, new_number])
-    
-    def log_entry(self, key, value):
+
+    def rename_segments(self, seg_list):
+        ''' (self, [str]) -> [str]
+        Renames the segments to make sure that their suffixes are in proper
+        ascending order.
+        '''
+        result = []
+
+        for i in range(len(seg_list)):
+            name = seg_list[i]
+            name_decomp = name.split('-')
+            name_decomp[-1] = str(i + 1)
+            result.append('-'.join(name_decomp))
+
+        return result
+
+    def rename_segment_files(self, result):
+        ''' (self) -> [str]
+        Renames the segment files on disk to make sure that their suffixes are 
+        in proper ascending order.
+        '''
+        corrected_names = self.rename_segments(result)
+        for idx, segment in enumerate(result):
+            old_path = self.segments_directory + segment
+            new_path = self.segments_directory + corrected_names[idx]
+            rename_file(old_path, new_path)
+
+        return corrected_names
+
+    def as_log_entry(self, key, value):
         '''(str, str) -> str
         Converts a key value pair into a comma seperated newline delimited
         log entry.
@@ -254,7 +237,7 @@ class SSTable():
 
         with open(self.segments_directory + segment_name, 'w') as s:
             for key, val in keys.items():
-                log = self.log_entry(key, val.strip())
+                log = self.as_log_entry(key, val.strip())
                 s.write(log)
 
     def memtable_bkup(self):
@@ -264,23 +247,22 @@ class SSTable():
         file_path = self.segments_directory + self.memtable_log
         return AppendLog.instance(file_path)
 
-def benchmark_store(db):
-    for i in range(100000):
-        db.db_set('chris', 'lessard')
-
-def benchmark_get(db):
-    db.db_get('daniel')
+# Basic benchmarking code
 
 if __name__ == "__main__":
     import timeit
 
     setup = """
-from __main__ import benchmark_store 
-from __main__ import benchmark_get
 from __main__ import SSTable
 db = SSTable('test_file-1', 'segments/', 'bkup')
 """
+    def benchmark_store(db):
+        for i in range(100000):
+            db.db_set('chris', 'lessard')
 
+    def benchmark_get(db):
+        db.db_get('daniel')
+        
     benchmark_store_str = """benchmark_store(db)"""
     benchmark_get_str = """
 db.db_set('daniel', 'lessard')
