@@ -153,20 +153,6 @@ class SSTable():
 
         return segment1
 
-    def save_memtable_snapshot(self, name):
-        ''' (self, str) -> None
-        Saves a pickle dump of the current memtable to disk, calling the file name.
-        '''
-        with open(self.full_path(), 'wb') as snapshot_file_stream:
-            pickle.dump(self.memtable, snapshot_file_stream)
-
-    def load_memtable_snapshot(self, name):
-        ''' (self, str) -> None
-        Loads a snapshot of the memtable from disk to memory, using file name.
-        '''
-        with open(self.full_path(), 'rb') as snapshot_file_stream:
-            self.memtable = pickle.load(snapshot_file_stream)
-
     def flush_memtable(self, path):
         ''' (self, str) -> None
         Writes the contents of the current memtable to disk and wipes the current memtable.
