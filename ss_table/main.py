@@ -1,4 +1,4 @@
-from ss_table import SSTable
+from database.ss_table import SSTable
 
 BASEPATH = 'segments/'
 FILENAME = 'sstable-1'

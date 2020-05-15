@@ -1,7 +1,7 @@
 from pathlib import Path
 from os import remove as remove_file, rename as rename_file
-from red_black_tree import RedBlackTree
-from append_log import AppendLog
+from .red_black_tree import RedBlackTree
+from .append_log import AppendLog
 import pickle
 
 class SSTable():

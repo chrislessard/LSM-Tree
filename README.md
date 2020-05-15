@@ -8,7 +8,7 @@ You'll need python3 in order to run this code.
 
 ## Project use and description
 
-The project contains three implementations of key-values stores. To use one of them, cd into its directory and invoke `python3 main.py`. If you would like to run the test suite, cd into the directory and invoke `python3 *_tests.py`.
+The project contains three implementations of key-values stores. To use one of them, cd into its directory and invoke `python3 main.py`.
 
 All versions of the store will create csv files on disk. These represent the persistent versions of they key value store. The AugmentedLog and SSTable will additionally place these .csv files in a directory called segments.
 
@@ -18,6 +18,10 @@ This is an extremely simple key value store, supporting two commands:
 
 1. store {key} {data} : store the pair (key, value) in the database
 2. get {key} : retrieve the most recent value on disk associated with key
+
+#### Testing
+
+`cd` into the directory and `invoke python basic_log_tests.py`.
 
 ### augmented_log
 
@@ -33,6 +37,10 @@ This is an improved version of the basic_log, supporting some functionality comm
 
 The main improvement over the basic_log comes in the use of an index to perform fast lookups on key values pairs, and the introduction of segments and the compaction algorithm to reclaim diskspace and speed up reads.
 
+#### Testing
+
+`cd` into the directory and invoke `python augmented_log_tests.py`.
+
 ### ss_table
 
 This is a basic implementation of a a Sorted String Table (SSTable). It uses the augmented log as its basis, making one key change: it guarantees that segments are sorted by key. The interface is the same as the AugmentedLog's.
@@ -44,6 +52,10 @@ You'll notice when you use the SSTable that segments aren't actively being creat
 Since the memtable isn't persistent, we back it up to disk on each operation using the standard append-only log, which serves solely the purpose of re-populating the memtable in the event of a system failure.
 
 The merging algorithm implementation is different, since it can leverage the fact that segments are sorted.
+
+#### Testing
+
+`cd` into the directory and invoke `python3 -m unittest test.ss_table_tests`.
 
 ## Miscellaneous improvements
 

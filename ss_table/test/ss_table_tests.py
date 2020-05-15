@@ -2,7 +2,7 @@ import unittest
 import os
 import pickle
 from pathlib import Path
-from ss_table import SSTable
+from src.ss_table import SSTable
 
 TEST_FILENAME = 'test_file-1'
 TEST_BASEPATH = 'test-segments/'
