@@ -18,6 +18,9 @@ class TestDatabase(unittest.TestCase):
         for filename in os.listdir(TEST_BASEPATH):
             os.remove(TEST_BASEPATH + filename)
 
+    def tearDownClass():
+        os.rmdir(TEST_BASEPATH)
+
     # db_set
     def test_db_set_stores_pair_in_memtable(self):
         '''
