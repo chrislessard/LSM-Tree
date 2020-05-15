@@ -81,16 +81,26 @@ class TestDatabase(unittest.TestCase):
         expected_lines = ['chris,lessard\n', 'daniel,lessard\n']
         self.assertEqual(lines, expected_lines)
 
-    # def test_db_set_writes_to_wal(self):
-    #     '''
-    #     Tests that db_set invocations write the values to the write-ahead-log.
-    #     '''
-    #     db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-    #     db.memtable.add('chris', 'lessard')
-    #     db.memtable.add('daniel', 'lessard')
+    def test_db_set_writes_to_wal(self):
+        '''
+        Tests that db_set invocations write the values to the write-ahead-log.
+        '''
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        
+        # The singleton instance will persist throughout the suite.
+        # This test tests its functionality directory, so we need to wipe
+        # its state.
+        db.memtable_bkup().clear()
+        open(TEST_BASEPATH + BKUP_NAME, 'w').close()
 
-    #     self.assertEqual(Path(TEST_BASEPATH + BKUP_NAME).exists(), True)
+        db.db_set('chris', 'lessard')
+        db.db_set('daniel', 'lessard')
 
+        self.assertEqual(Path(TEST_BASEPATH + BKUP_NAME).exists(), True)
+        with open(TEST_BASEPATH + BKUP_NAME, 'r') as s:
+            lines = s.readlines()
+        
+        self.assertEqual(len(lines), 2)
 
     # db_get
     def test_db_get_single_val_retrieval(self):
@@ -410,22 +420,25 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.segments, segments)
         self.assertEqual(db.current_segment, segments[-1])
 
-    # def test_load_memtable_from_wal(self):
-    #     '''
-    #     Tests that the memtable can be restored from the write-ahead-log.
-    #     '''
-    #     db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+    def test_load_memtable_from_wal(self):
+        '''
+        Tests that the memtable can be restored from the write-ahead-log.
+        '''
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        # The singleton instance will persist throughout the suite.
+        # This test tests its functionality directory, so we need to wipe
+        # its state.
+        db.memtable_bkup().clear()
+        db.db_set('sad', 'mad')
+        db.db_set('pad', 'tad')
 
-    #     db.db_set('chris', 'lessard')
-    #     db.db_set('daniel', 'lessard')
-    #     self.assertEqual(Path(TEST_BASEPATH + BKUP_NAME).exists(), True)
+        del db
 
-    #     del db
-
-    #     db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-    #     db.restore_memtable()
-    #     self.assertEqual(db.memtable.contains('chris'), True)
-    #     self.assertEqual(db.memtable.contains('daniel'), True)
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.restore_memtable()
+        self.assertEqual(db.memtable.contains('sad'), True)
+        self.assertEqual(db.memtable.contains('pad'), True)
+        self.assertEqual(db.memtable.total_bytes, 16)
 
 if __name__ == '__main__':
     unittest.main()

@@ -48,6 +48,7 @@ class SSTable():
 
         # Write to memtable backup
         log = self.as_log_entry(key, value)
+
         self.memtable_bkup().write(log)
 
         # Write to memtable
@@ -248,19 +249,6 @@ class SSTable():
 
         # todo load the memtable as well. seperate function.
 
-    # def restore_memtable(self):
-    #     ''' (self) -> None
-
-    #     Re-populates the memtable from the disk backup.
-    #     '''
-    #     wal_path = self.segments_directory + self.wal_basename
-    #     if Path(wal_path).exists():
-    #         with open(wal_path, 'r') as s:
-    #             for line in s:
-    #                 print(line)
-    #                 key, value = line.strip().split(',')
-    #                 self.memtable.insert(key, value)
-
     def save_metadata(self):
         ''' (self) -> None
         Save necessary bookkeeping information.
@@ -273,7 +261,20 @@ class SSTable():
 
         with open(backup_path, 'wb') as s:
             pickle.dump(bookkeeping_info, s)
-   
+
+    def restore_memtable(self):
+        ''' (self) -> None
+
+        Re-populates the memtable from the disk backup.
+        '''
+        wal_path = self.segments_directory + self.wal_basename
+        if Path(wal_path).exists():
+            with open(wal_path, 'r') as s:
+                for line in s:
+                    key, value = line.strip().split(',')
+                    self.memtable.add(key, value)
+                    # +2 for \n and , added to file at flush time
+                    self.memtable.total_bytes += len(key) + len(value) + 2
 
 # Basic benchmarking code
 
