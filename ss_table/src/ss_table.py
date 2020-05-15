@@ -26,6 +26,10 @@ class SSTable():
         if not (Path(segments_directory).exists() and Path(segments_directory).is_dir):
             Path(segments_directory).mkdir()
 
+        # Attempt to load metadata and a pre-existing memtable.
+        self.load_metadata()
+        self.restore_memtable()
+
     def db_set(self, key, value):
         ''' (self, str, str) -> None
         Stores a new key value pair in the DB
@@ -34,7 +38,7 @@ class SSTable():
         additional_size = len(key) + len(value)
         if self.memtable.total_bytes + additional_size > self.threshold:
             # Flush memtable to disk
-            self.flush_memtable(self.full_path())
+            self.flush_memtable(self.current_segment_path())
             self.memtable = RedBlackTree()
 
             # Clear the log file
@@ -42,7 +46,7 @@ class SSTable():
 
             # Update bookkeeping metadata
             self.segments.append(self.current_segment)
-            new_seg_name = self.new_segment_name()
+            new_seg_name = self.incremented_segment_name()
             self.current_segment = new_seg_name
             self.memtable.total_bytes = 0
 
@@ -93,6 +97,9 @@ class SSTable():
             seg1, seg2 = segments.pop(0), segments.pop(0)
 
             # check if their total size exceeds the threshold
+            # This isnt quite right. it might be popular to reduce to contiguous
+            # segments even if their current size exceedes the threshold, since 
+            # they made share keys
             seg1_size = Path(self.segments_directory + seg1).stat().st_size
             seg2_size = Path(self.segments_directory + seg2).stat().st_size
             total = seg1_size + seg2_size
@@ -118,6 +125,7 @@ class SSTable():
         '''
         self.threshold = threshold
 
+    # Helper methods
     def merge_segments(self, segment1, segment2):
         ''' (self, str, str) -> str
         Concatenates the contents of the files represented byt segment1 and
@@ -164,13 +172,13 @@ class SSTable():
                 log = self.as_log_entry(node.key, node.value)
                 s.write(log)
 
-    # Helper methods
-    def full_path(self):
+    def current_segment_path(self):
         return self.segments_directory + self.current_segment
 
-    def new_segment_name(self):
+    def incremented_segment_name(self):
         ''' (self) -> None
-        Calculate the name of incrementing the current segment.
+        Calculate the name that results from incrementing the current
+        segment's number.
         '''
         name, number = self.current_segment.split('-')
         new_number = str(int(number) + 1)
@@ -179,8 +187,8 @@ class SSTable():
 
     def rename_segments(self, seg_list):
         ''' (self, [str]) -> [str]
-        Renames the segments to make sure that their suffixes are in proper
-        ascending order.
+        Renames the segments in self.segments to make sure that their 
+        suffixes are in correct ascending order.
         '''
         result = []
 
@@ -192,13 +200,15 @@ class SSTable():
 
         return result
 
-    def rename_segment_files(self, result):
+    def rename_segment_files(self, segments):
         ''' (self) -> [str]
-        Renames the segment files on disk to make sure that their suffixes are 
-        in proper ascending order.
+        Renames the segment files, represented in memory by the values in 
+        segments, on disk to make sure that their suffixes are in proper 
+        ascending order.
         '''
-        corrected_names = self.rename_segments(result)
-        for idx, segment in enumerate(result):
+        corrected_names = self.rename_segments(segments)
+
+        for idx, segment in enumerate(segments):
             old_path = self.segments_directory + segment
             new_path = self.segments_directory + corrected_names[idx]
             rename_file(old_path, new_path)
@@ -274,7 +284,7 @@ class SSTable():
                     key, value = line.strip().split(',')
                     self.memtable.add(key, value)
                     # +2 for \n and , added to file at flush time
-                    self.memtable.total_bytes += len(key) + len(value) + 2
+                    self.memtable.total_bytes += (len(key) + len(value) + 2)
 
 # Basic benchmarking code
 

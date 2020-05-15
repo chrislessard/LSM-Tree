@@ -3,6 +3,7 @@ import os
 import pickle
 from pathlib import Path
 from src.ss_table import SSTable
+from src.red_black_tree import RedBlackTree
 
 TEST_FILENAME = 'test_file-1'
 TEST_BASEPATH = 'test-segments/'
@@ -437,11 +438,46 @@ class TestDatabase(unittest.TestCase):
 
         del db
 
+        # This code is run by default upon db instantiation, 
+        # so we clear the memtable here to make sure that the method works
+        # individually
         db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.memtable = RedBlackTree()
+
         db.restore_memtable()
         self.assertEqual(db.memtable.contains('sad'), True)
         self.assertEqual(db.memtable.contains('pad'), True)
-        self.assertEqual(db.memtable.total_bytes, 16)
+
+
+    def test_initializing_db_loads_metadata_and_memtable(self):
+        '''
+        Tests that initializing an new instance of the database loads
+        metadata and memtable info.
+        '''
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.memtable_bkup().clear()
+
+        segments = ['segment1', 'segment2', 'segment3', 'segment4', 'segment5']
+        db.segments = segments
+        db.current_segment = 'segment5'
+
+        db.db_set('french', 'francais')
+        db.db_set('english', 'anglais')
+        db.db_set('spanish', 'espagnole')
+
+        db.save_metadata()
+
+        del db
+
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+
+        self.assertEqual(db.segments, segments)
+        self.assertEqual(db.current_segment, 'segment5')
+        self.assertTrue(db.memtable.contains('french'))
+        self.assertTrue(db.memtable.contains('english'))
+        self.assertTrue(db.memtable.contains('spanish'))
+
+    
 
 if __name__ == '__main__':
     unittest.main()

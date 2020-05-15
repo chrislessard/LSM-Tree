@@ -1,8 +1,8 @@
-from database.ss_table import SSTable
+from src.ss_table import SSTable
 
-BASEPATH = 'segments/'
-FILENAME = 'sstable-1'
-MEMTABLE_BKUP = 'memtable_bkup'
+SEGMENTS_DIRECTORY = 'segments/'
+SEGMENT_BASENAME = 'sstable-1'
+WAL_BASENAME = 'memtable_bkup'
 
 def main():
     '''
@@ -18,7 +18,7 @@ def main():
         'exit'
     ]
 
-    db = SSTable(FILENAME, BASEPATH, MEMTABLE_BKUP)
+    db = SSTable(SEGMENT_BASENAME, SEGMENTS_DIRECTORY, WAL_BASENAME)
 
     print('\n\t'.join(usage_msg))
 
