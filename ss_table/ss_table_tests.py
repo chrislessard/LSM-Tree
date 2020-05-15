@@ -1,5 +1,6 @@
 import unittest
 import os
+import pickle
 from pathlib import Path
 from ss_table import SSTable
 
@@ -79,6 +80,17 @@ class TestDatabase(unittest.TestCase):
 
         expected_lines = ['chris,lessard\n', 'daniel,lessard\n']
         self.assertEqual(lines, expected_lines)
+
+    # def test_db_set_writes_to_wal(self):
+    #     '''
+    #     Tests that db_set invocations write the values to the write-ahead-log.
+    #     '''
+    #     db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+    #     db.memtable.add('chris', 'lessard')
+    #     db.memtable.add('daniel', 'lessard')
+
+    #     self.assertEqual(Path(TEST_BASEPATH + BKUP_NAME).exists(), True)
+
 
     # db_get
     def test_db_get_single_val_retrieval(self):
@@ -362,6 +374,58 @@ class TestDatabase(unittest.TestCase):
         db.set_threshold(1000)
 
         self.assertEqual(db.threshold, 1000)
+
+    def test_save_metadata_saves_metadata(self):
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        segments = ['segment-1', 'segment-2', 'segment-3']
+        db.segments = segments
+
+        db.db_set('chris', 'lessard')
+        db.db_set('daniel', 'lessard')
+        db.save_metadata()
+
+        with open(db.segments_directory + 'database_metadata', 'rb') as s:
+            metadata = pickle.load(s)
+        
+        self.assertEqual(metadata['current_segment'], TEST_FILENAME)
+        self.assertEqual(metadata['segments'], segments)
+
+    def test_load_metadata_segments_at_init(self):
+        '''
+        Checks that pre-existing segments are loaded into the system at run time.
+        '''
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        segments = ['segment-1', 'segment-2', 'segment-3']
+        db.segments = segments
+        db.current_segment = segments[-1]
+
+        db.db_set('chris', 'lessard')
+        db.db_set('daniel', 'lessard')
+        db.save_metadata() # pickle will be saved
+        del db
+
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.load_metadata()
+
+        self.assertEqual(db.segments, segments)
+        self.assertEqual(db.current_segment, segments[-1])
+
+    # def test_load_memtable_from_wal(self):
+    #     '''
+    #     Tests that the memtable can be restored from the write-ahead-log.
+    #     '''
+    #     db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+
+    #     db.db_set('chris', 'lessard')
+    #     db.db_set('daniel', 'lessard')
+    #     self.assertEqual(Path(TEST_BASEPATH + BKUP_NAME).exists(), True)
+
+    #     del db
+
+    #     db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+    #     db.restore_memtable()
+    #     self.assertEqual(db.memtable.contains('chris'), True)
+    #     self.assertEqual(db.memtable.contains('daniel'), True)
 
 if __name__ == '__main__':
     unittest.main()

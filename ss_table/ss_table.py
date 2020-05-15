@@ -5,18 +5,18 @@ from append_log import AppendLog
 import pickle
 
 class SSTable():
-    def __init__(self, database_name, segments_directory, memtable_log):
+    def __init__(self, segment_basename, segments_directory, wal_basename):
         ''' (self, str, str, str) -> SSTable
 
         Initialize a new SSTable with:
 
-        - A first segment called database_name
+        - A first segment called segment_basename
         - A segments directory called segments_directory
-        - A memtable log called memtable_log
+        - A memtable log called wal_basename
         '''
         self.segments_directory = segments_directory
-        self.memtable_log = memtable_log
-        self.current_segment = database_name
+        self.wal_basename = wal_basename
+        self.current_segment = segment_basename
         self.segments = []
 
         # Default threshold is 1mb
@@ -230,8 +230,50 @@ class SSTable():
         ''' (self) -> str
         Returns the full path to the memtable backup.
         '''
-        file_path = self.segments_directory + self.memtable_log
+        file_path = self.segments_directory + self.wal_basename
         return AppendLog.instance(file_path)
+
+    def load_metadata(self):
+        ''' (self) -> None
+        Checks to see if any metadata or memtable logs are present from the previous
+        session, and load them into the system.
+        '''
+        metadata_path = self.segments_directory + 'database_metadata'
+
+        if Path(metadata_path).exists():
+            with open(metadata_path, 'rb') as s:
+                metadata = pickle.load(s)
+                self.segments = metadata['segments']
+                self.current_segment = metadata['current_segment']
+
+        # todo load the memtable as well. seperate function.
+
+    # def restore_memtable(self):
+    #     ''' (self) -> None
+
+    #     Re-populates the memtable from the disk backup.
+    #     '''
+    #     wal_path = self.segments_directory + self.wal_basename
+    #     if Path(wal_path).exists():
+    #         with open(wal_path, 'r') as s:
+    #             for line in s:
+    #                 print(line)
+    #                 key, value = line.strip().split(',')
+    #                 self.memtable.insert(key, value)
+
+    def save_metadata(self):
+        ''' (self) -> None
+        Save necessary bookkeeping information.
+        '''
+        bookkeeping_info = {
+            'current_segment': self.current_segment,
+            'segments': self.segments
+        }
+        backup_path = self.segments_directory + 'database_metadata'
+
+        with open(backup_path, 'wb') as s:
+            pickle.dump(bookkeeping_info, s)
+   
 
 # Basic benchmarking code
 
