@@ -29,10 +29,10 @@ def main():
         if cmd[0] == 'store':
             key, val = cmd[1], ' '.join(cmd[2:])
             db.db_set(key, val)
-            print('Stored "', key, '" with value "', val, '"\n')
+            print('Stored', key, 'with value', val)
         elif cmd[0] == 'get':
             key = cmd[1]
-            print(db.db_get(key), '\n')
+            print('Key "' + key + '" has value:', db.db_get(key))
         elif cmd[0] == 'compact_segments':
             print('\nCompacting segments on disk ...')
             db.compact()
@@ -45,6 +45,7 @@ def main():
         elif cmd[0] == 'help':
             print('\n\t'.join(usage_msg))
         elif cmd[0] == 'exit':
+            db.save_metadata()
             break
         else:
             print('Invalid command.')

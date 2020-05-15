@@ -1,6 +1,6 @@
 """
 A classic (not left-leaning) Red-Black Tree implementation, supporting addition and deletion.
-Augmented to allowed updates and inorder traversal.
+Augmented to allow updates and inorder traversal.
 Original source: https://github.com/stanislavkozlovski/Red-Black-Tree/blob/master/rb_tree.py
 """
 

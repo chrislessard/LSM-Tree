@@ -94,7 +94,7 @@ class TestDatabase(unittest.TestCase):
         # The singleton instance will persist throughout the suite.
         # This test tests its functionality directory, so we need to wipe
         # its state.
-        db.memtable_bkup().clear()
+        db.memtable_wal().clear()
         open(TEST_BASEPATH + BKUP_NAME, 'w').close()
 
         db.db_set('chris', 'lessard')
@@ -432,7 +432,7 @@ class TestDatabase(unittest.TestCase):
         # The singleton instance will persist throughout the suite.
         # This test tests its functionality directory, so we need to wipe
         # its state.
-        db.memtable_bkup().clear()
+        db.memtable_wal().clear()
         db.db_set('sad', 'mad')
         db.db_set('pad', 'tad')
 
@@ -455,7 +455,7 @@ class TestDatabase(unittest.TestCase):
         metadata and memtable info.
         '''
         db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-        db.memtable_bkup().clear()
+        db.memtable_wal().clear()
 
         segments = ['segment1', 'segment2', 'segment3', 'segment4', 'segment5']
         db.segments = segments

@@ -12,7 +12,7 @@ class SSTable():
 
         - A first segment called segment_basename
         - A segments directory called segments_directory
-        - A memtable log called wal_basename
+        - A memtable write ahead log (WAL) called wal_basename
         '''
         self.segments_directory = segments_directory
         self.wal_basename = wal_basename
@@ -23,10 +23,11 @@ class SSTable():
         self.threshold = 1000000
         self.memtable = RedBlackTree()
 
+        # Create the segments directory
         if not (Path(segments_directory).exists() and Path(segments_directory).is_dir):
             Path(segments_directory).mkdir()
 
-        # Attempt to load metadata and a pre-existing memtable.
+        # Attempt to load metadata and a pre-existing memtable
         self.load_metadata()
         self.restore_memtable()
 
@@ -42,7 +43,7 @@ class SSTable():
             self.memtable = RedBlackTree()
 
             # Clear the log file
-            self.memtable_bkup().clear()
+            self.memtable_wal().clear()
 
             # Update bookkeeping metadata
             self.segments.append(self.current_segment)
@@ -53,7 +54,7 @@ class SSTable():
         # Write to memtable backup
         log = self.as_log_entry(key, value)
 
-        self.memtable_bkup().write(log)
+        self.memtable_wal().write(log)
 
         # Write to memtable
         self.memtable.add(key, value)
@@ -125,7 +126,75 @@ class SSTable():
         '''
         self.threshold = threshold
 
-    # Helper methods
+    ### Helper methods
+
+    def memtable_wal(self):
+        ''' (self) -> str
+        Returns the full path to the memtable backup.
+        '''
+        return AppendLog.instance(self.memtable_wal_path())
+
+    # Metadata and initialization helpers
+    def load_metadata(self):
+        ''' (self) -> None
+        Checks to see if any metadata or memtable logs are present from the previous
+        session, and load them into the system.
+        '''
+        metadata_path = self.segments_directory + 'database_metadata'
+
+        if Path(metadata_path).exists():
+            with open(metadata_path, 'rb') as s:
+                metadata = pickle.load(s)
+                self.segments = metadata['segments']
+                self.current_segment = metadata['current_segment']
+
+        # todo load the memtable as well. seperate function.
+
+    def save_metadata(self):
+        ''' (self) -> None
+        Save necessary bookkeeping information.
+        '''
+        bookkeeping_info = {
+            'current_segment': self.current_segment,
+            'segments': self.segments
+        }
+        backup_path = self.segments_directory + 'database_metadata'
+
+        with open(backup_path, 'wb') as s:
+            pickle.dump(bookkeeping_info, s)
+
+    def restore_memtable(self):
+        ''' (self) -> None
+
+        Re-populates the memtable from the disk backup.
+        '''
+        if Path(self.memtable_wal_path()).exists():
+            with open(self.memtable_wal_path(), 'r') as s:
+                for line in s:
+                    key, value = line.strip().split(',')
+                    self.memtable.add(key, value)
+                    # +2 for \n and , added to file at flush time
+                    self.memtable.total_bytes += (len(key) + len(value) + 2)
+
+    # Write helpers
+    def flush_memtable(self, path):
+        ''' (self, str) -> None
+        Writes the contents of the current memtable to disk and wipes the current memtable.
+        '''
+        traversal = self.memtable.in_order()
+        with open(path, 'w') as s:
+            for node in traversal:
+                log = self.as_log_entry(node.key, node.value)
+                s.write(log)
+
+    def as_log_entry(self, key, value):
+        '''(str, str) -> str
+        Converts a key value pair into a comma seperated newline delimited
+        log entry.
+        '''
+        return str(key) + ',' + (value) + '\n'
+
+    # Compaction and merge helpers
     def merge_segments(self, segment1, segment2):
         ''' (self, str, str) -> str
         Concatenates the contents of the files represented byt segment1 and
@@ -162,18 +231,20 @@ class SSTable():
 
         return segment1
 
-    def flush_memtable(self, path):
+    def compact_segment(self, segment_name):
         ''' (self, str) -> None
-        Writes the contents of the current memtable to disk and wipes the current memtable.
+        Compacts a single segment named segment_name.
         '''
-        traversal = self.memtable.in_order()
-        with open(path, 'w') as s:
-            for node in traversal:
-                log = self.as_log_entry(node.key, node.value)
-                s.write(log)
+        keys = {}
+        with open(self.segments_directory + segment_name, 'r') as s:
+            for line in s:
+                k, v = line.split(',')
+                keys[k] = v
 
-    def current_segment_path(self):
-        return self.segments_directory + self.current_segment
+        with open(self.segments_directory + segment_name, 'w') as s:
+            for key, val in keys.items():
+                log = self.as_log_entry(key, val.strip())
+                s.write(log)
 
     def incremented_segment_name(self):
         ''' (self) -> None
@@ -215,76 +286,15 @@ class SSTable():
 
         return corrected_names
 
-    def as_log_entry(self, key, value):
-        '''(str, str) -> str
-        Converts a key value pair into a comma seperated newline delimited
-        log entry.
-        '''
-        return str(key) + ',' + (value) + '\n'
+    # Path generators
+    def current_segment_path(self):
+        return self.segments_directory + self.current_segment
 
-    def compact_segment(self, segment_name):
-        ''' (self, str) -> None
-        Compacts the single segment named segment_name.
-        '''
-        keys = {}
-        with open(self.segments_directory + segment_name, 'r') as s:
-            for line in s:
-                k, v = line.split(',')
-                keys[k] = v
-
-        with open(self.segments_directory + segment_name, 'w') as s:
-            for key, val in keys.items():
-                log = self.as_log_entry(key, val.strip())
-                s.write(log)
-
-    def memtable_bkup(self):
+    def memtable_wal_path(self):
         ''' (self) -> str
-        Returns the full path to the memtable backup.
+        Returns the path to the memtable write ahead log.
         '''
-        file_path = self.segments_directory + self.wal_basename
-        return AppendLog.instance(file_path)
-
-    def load_metadata(self):
-        ''' (self) -> None
-        Checks to see if any metadata or memtable logs are present from the previous
-        session, and load them into the system.
-        '''
-        metadata_path = self.segments_directory + 'database_metadata'
-
-        if Path(metadata_path).exists():
-            with open(metadata_path, 'rb') as s:
-                metadata = pickle.load(s)
-                self.segments = metadata['segments']
-                self.current_segment = metadata['current_segment']
-
-        # todo load the memtable as well. seperate function.
-
-    def save_metadata(self):
-        ''' (self) -> None
-        Save necessary bookkeeping information.
-        '''
-        bookkeeping_info = {
-            'current_segment': self.current_segment,
-            'segments': self.segments
-        }
-        backup_path = self.segments_directory + 'database_metadata'
-
-        with open(backup_path, 'wb') as s:
-            pickle.dump(bookkeeping_info, s)
-
-    def restore_memtable(self):
-        ''' (self) -> None
-
-        Re-populates the memtable from the disk backup.
-        '''
-        wal_path = self.segments_directory + self.wal_basename
-        if Path(wal_path).exists():
-            with open(wal_path, 'r') as s:
-                for line in s:
-                    key, value = line.strip().split(',')
-                    self.memtable.add(key, value)
-                    # +2 for \n and , added to file at flush time
-                    self.memtable.total_bytes += (len(key) + len(value) + 2)
+        return self.segments_directory + self.wal_basename
 
 # Basic benchmarking code
 
