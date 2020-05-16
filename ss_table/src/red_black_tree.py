@@ -89,7 +89,7 @@ class RedBlackTree:
             return list()
         yield from self.root.__iter__()
 
-    def add(self, key, value, offset=None, segment=None):
+    def add(self, key, value=None, offset=None, segment=None):
         # attempt to find and update the node first
         node = self.find_node(key)
         if node:
