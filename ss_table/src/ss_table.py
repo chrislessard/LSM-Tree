@@ -70,9 +70,18 @@ class SSTable():
         '''
         # Attempts to find the key in the memtable first
         memtable_result = self.memtable.find_node(key)
-        
         if memtable_result:
             return memtable_result.value
+
+        # Check the index
+        index_node = self.index.find_node(key)
+        if index_node:
+            path = self.segment_path(index_node.segment)
+            with open(path, 'r') as s:
+                s.seek(index_node.offset)
+                k, v = s.readline().split(',')
+                if k == key:
+                    return v.strip()
 
         segments = self.segments[:]
         while len(segments):
@@ -331,6 +340,12 @@ class SSTable():
         Returns the path to the memtable write ahead log.
         '''
         return self.segments_directory + self.wal_basename
+
+    def segment_path(self, segment_name):
+        ''' (self, str) -> str
+        Returns the path to the given segment_name.
+        '''
+        return self.segments_directory + segment_name
 
 # Basic benchmarking code
 

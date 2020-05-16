@@ -185,6 +185,14 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.db_get('daniel'), 'lessard')
         self.assertEqual(db.db_get('a'), 'c')
 
+    def test_get_segment_path(self):
+        ''' 
+        Tests that the segment path can be retrieved for any segment
+        '''
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        self.assertEqual(db.segment_path('segment1'), TEST_BASEPATH + 'segment1')
+        self.assertEqual(db.segment_path('segment5'), TEST_BASEPATH + 'segment5')
+
     # segments
     def test_db_set_uses_segment(self):
         '''
@@ -672,6 +680,15 @@ class TestDatabase(unittest.TestCase):
         key, value = line2.strip().split(',')
         self.assertEqual(key, 'vwx')
         self.assertEqual(value, '234')
+
+    def test_db_get_uses_index(self):
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        with open(TEST_BASEPATH + 'segment2', 'w') as s:
+            s.write('chris,lessard\n')
+
+        db.index.add('chris', 'lessard', offset=0, segment='segment2')
+
+        self.assertEqual(db.db_get('chris'), 'lessard')
 
 if __name__ == '__main__':
     unittest.main()
