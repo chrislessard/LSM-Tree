@@ -185,11 +185,25 @@ class SSTable():
         ''' (self, str) -> None
         Writes the contents of the current memtable to disk and wipes the current memtable.
         '''
+        sparsity_counter = self.sparsity()
+
+        # We could use Path(path).stat().st_size, but this may lead to 
+        # a bug unless we know that the write mechanism is consistently flushing to disk.
+        # This is faster than adding that guarantee.
+        offset = 0
+
         traversal = self.memtable.in_order()
         with open(path, 'w') as s:
             for node in traversal:
                 log = self.as_log_entry(node.key, node.value)
+
+                if sparsity_counter == 1:
+                    self.index.add(node.key, node.value, offset=offset, segment=self.current_segment)
+                    sparsity_counter = self.sparsity() + 1
+
                 s.write(log)
+                offset += len(log)
+                sparsity_counter -= 1
 
     def as_log_entry(self, key, value):
         '''(str, str) -> str
@@ -296,6 +310,8 @@ class SSTable():
         Sets the sparsity factor for the database. The threshold is divided by this 
         number to yield the index's sparsity, which represents how many elements per
         segment will be stored in the index.
+
+        The higher this number, the more records will be stored.
         '''
         self.sparsity_factor = factor
 

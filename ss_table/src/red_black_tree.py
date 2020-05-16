@@ -10,9 +10,10 @@ RED = 'RED'
 NIL = 'NIL'
 
 class Node:
-    def __init__(self, key, color, parent, left=None, right=None, value=None, segment=None):
+    def __init__(self, key, color, parent, left=None, right=None, value=None, offset=None, segment=None):
         self.key = key
         self.value = value
+        self.offset = offset
         self.segment = segment
         self.color = color
         self.parent = parent
@@ -20,7 +21,13 @@ class Node:
         self.right = right
 
     def __repr__(self):
-        return '{color} {val} Node'.format(color=self.color, val=self.key)
+        return '{color} {key} {val} {offset} {segment} Node'.format(
+            color=self.color,
+            key=self.key,
+            val=self.value,
+            offset=self.offset,
+            segment=self.segment
+            )
 
     def __iter__(self):
         if self.left.color != NIL:
@@ -82,7 +89,7 @@ class RedBlackTree:
             return list()
         yield from self.root.__iter__()
 
-    def add(self, key, value, segment=None):
+    def add(self, key, value, offset=None, segment=None):
         # attempt to find and update the node first
         node = self.find_node(key)
         if node:
@@ -98,6 +105,7 @@ class RedBlackTree:
                 left=self.NIL_LEAF,
                 right=self.NIL_LEAF,
                 value=value,
+                offset=offset,
                 segment=segment
                 )
             self.count += 1
@@ -105,7 +113,16 @@ class RedBlackTree:
         parent, node_dir = self._find_parent(key)
         if node_dir is None:
             return  # key is in the tree
-        new_node = Node(key=key, color=RED, parent=parent, left=self.NIL_LEAF, right=self.NIL_LEAF, value=value)
+        new_node = Node(
+            key=key, 
+            color=RED, 
+            parent=parent, 
+            left=self.NIL_LEAF, 
+            right=self.NIL_LEAF, 
+            value=value, 
+            offset=offset, 
+            segment=segment)
+
         if node_dir == 'L':
             parent.left = new_node
         else:

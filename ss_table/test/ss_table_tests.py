@@ -505,5 +505,173 @@ class TestDatabase(unittest.TestCase):
         db.set_sparsity_factor(7)
         self.assertEqual(db.sparsity(), 14)
 
+    def test_flush_memtable_populates_index(self):
+        '''
+        Tests that flushing the memtable to disk populates the index.
+        '''
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.set_threshold(100)
+        db.set_sparsity_factor(25)
+
+        db.db_set('abc', '123')
+        db.db_set('def', '456')
+        db.db_set('ghi', '789')
+        db.db_set('jkl', '012')
+        db.db_set('mno', '345')
+        db.db_set('pqr', '678')
+        db.db_set('stu', '901')
+        db.db_set('vwx', '234')
+
+        db.flush_memtable(TESTPATH)
+
+        in_order = db.index.in_order()
+        self.assertEqual(len(in_order), 2)
+        self.assertTrue(db.index.contains('jkl'))
+        self.assertTrue(db.index.contains('vwx'))
+
+    def test_flush_memtable_stores_segment_in_index(self):
+        '''
+        Tests that flushing the memtable to disk populates the index and stores
+        the current segments within each node.s
+        '''
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.set_threshold(100)
+        db.set_sparsity_factor(25)
+
+        db.db_set('abc', '123')
+        db.db_set('def', '456')
+        db.db_set('ghi', '789')
+        db.db_set('jkl', '012')
+
+        db.flush_memtable(TESTPATH)
+
+        db.db_set('mno', '345')
+        db.db_set('pqr', '678')
+        db.db_set('stu', '901')
+        db.db_set('vwx', '234')
+
+        # Simulate crossing threshold
+        db.segments = ['test_file-1', 'test_file-2']
+        db.current_segment = 'test_file-2'
+        db.flush_memtable(TESTPATH)
+
+        segment1 = db.index.find_node('jkl').segment
+        segment2 = db.index.find_node('vwx').segment
+        
+        self.assertEqual(segment1, 'test_file-1')
+        self.assertEqual(segment2, 'test_file-2')
+
+    def test_flush_memtable_stores_correct_index_offsets(self):
+        '''
+        Tests that flushing the memtable to disk stores the correct
+        offsets into disk in the index.
+        '''
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.set_threshold(100)
+        db.set_sparsity_factor(25)
+
+        db.db_set('abc', '123')
+        db.db_set('def', '456')
+        db.db_set('ghi', '789')
+        db.db_set('jkl', '012')
+        db.db_set('mno', '345')
+        db.db_set('pqr', '678')
+        db.db_set('stu', '901')
+        db.db_set('vwx', '234')
+
+        db.flush_memtable(TESTPATH)
+
+        offset1 = db.index.find_node('jkl').offset
+        offset2 = db.index.find_node('vwx').offset
+
+        self.assertEqual(offset1, 24)
+        self.assertEqual(offset2, 56)
+
+        with open(TESTPATH, 'r') as s:
+            s.seek(offset1)
+            line1 = s.readline()
+            s.seek(offset2)
+            line2 = s.readline()
+
+        self.assertEqual(line1, 'jkl,012\n')
+        self.assertEqual(line2, 'vwx,234\n')
+
+    def test_retrieve_value_from_index(self):
+        '''
+        Tests that indexed values can be retrieved appropriately
+        from disk when there is one segment.
+        '''
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.set_threshold(100)
+        db.set_sparsity_factor(25)
+
+        db.db_set('abc', '123')
+        db.db_set('def', '456')
+        db.db_set('ghi', '789')
+        db.db_set('jkl', '012')
+
+        db.flush_memtable(TESTPATH)
+
+        offset1 = db.index.find_node('jkl').offset
+
+        with open(TESTPATH, 'r') as s:
+            s.seek(offset1)
+            line1 = s.readline()
+
+        key, value = line1.strip().split(',')
+        self.assertEqual(key, 'jkl')
+        self.assertEqual(value, '012')
+
+    def test_retrieve_values_from_index(self):
+        '''
+        Tests that indexed values can be retrieved appropriately
+        from disk when there are multiple segments.
+        '''
+        TESTPATH = TEST_BASEPATH + TEST_FILENAME
+
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.set_threshold(100)
+        db.set_sparsity_factor(25)
+
+        db.db_set('abc', '123')
+        db.db_set('def', '456')
+        db.db_set('ghi', '789')
+        db.db_set('jkl', '012')
+
+        db.flush_memtable(TESTPATH)
+
+        db.db_set('mno', '345')
+        db.db_set('pqr', '678')
+        db.db_set('stu', '901')
+        db.db_set('vwx', '234')
+
+        db.flush_memtable(TESTPATH)
+        'test_file-2'
+
+        # First segment
+        segment1 = db.index.find_node('jkl').segment
+        offset1 = db.index.find_node('jkl').offset
+
+        with open(TEST_BASEPATH + segment1, 'r') as s:
+            s.seek(offset1)
+            line1 = s.readline()
+
+        segment1 = db.index.find_node('jkl').segment
+        key, value = line1.strip().split(',')
+        self.assertEqual(key, 'jkl')
+        self.assertEqual(value, '012')
+
+        # Second segment
+        segment2 = db.index.find_node('vwx').segment
+        offset2 = db.index.find_node('vwx').offset
+
+        with open(TEST_BASEPATH + segment2, 'r') as s:
+            s.seek(offset2)
+            line2 = s.readline()
+
+        key, value = line2.strip().split(',')
+        self.assertEqual(key, 'vwx')
+        self.assertEqual(value, '234')
+
 if __name__ == '__main__':
     unittest.main()
