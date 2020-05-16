@@ -183,7 +183,7 @@ class RedBlackTree:
     def floor(self, key) -> int or None:
         """
         Given a key, return the closest key that is equal or less than it,
-        returning None when no such exists
+        returning None when no such key exists
         """
         if self.root is None: return None
         last_found_val = None if self.root.key > key else self.root.key

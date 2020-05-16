@@ -690,5 +690,18 @@ class TestDatabase(unittest.TestCase):
 
         self.assertEqual(db.db_get('chris'), 'lessard')
 
+    def test_db_get_uses_index_with_floor(self):
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        with open(TEST_BASEPATH + 'segment2', 'w') as s:
+            s.write('chris,lessard\n')
+            s.write('christian,dior\n')
+            s.write('daniel,lessard\n')
+
+        db.index.add('chris', 'lessard', offset=0, segment='segment2')
+
+        self.assertEqual(db.db_get('christian'), 'dior')
+        self.assertEqual(db.db_get('daniel'), 'lessard')
+
+
 if __name__ == '__main__':
     unittest.main()

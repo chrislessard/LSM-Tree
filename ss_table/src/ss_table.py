@@ -74,14 +74,17 @@ class SSTable():
             return memtable_result.value
 
         # Check the index
-        index_node = self.index.find_node(key)
-        if index_node:
-            path = self.segment_path(index_node.segment)
+        floor_val = self.index.floor(key)
+        floor_node = self.index.find_node(floor_val)
+
+        if floor_node:
+            path = self.segment_path(floor_node.segment)
             with open(path, 'r') as s:
-                s.seek(index_node.offset)
-                k, v = s.readline().split(',')
-                if k == key:
-                    return v.strip()
+                s.seek(floor_node.offset)
+                for line in s:
+                    k, v = line.strip().split(',')
+                    if k == key:
+                        return v.strip()
 
         segments = self.segments[:]
         while len(segments):
