@@ -23,6 +23,10 @@ class SSTable():
         self.threshold = 1000000
         self.memtable = RedBlackTree()
 
+        # Index
+        self.index = RedBlackTree()
+        self.sparsity_factor = 100
+
         # Create the segments directory
         if not (Path(segments_directory).exists() and Path(segments_directory).is_dir):
             Path(segments_directory).mkdir()
@@ -285,6 +289,22 @@ class SSTable():
             rename_file(old_path, new_path)
 
         return corrected_names
+
+    # Index helpers
+    def set_sparsity_factor(self, factor):
+        ''' (self, int) -> None
+        Sets the sparsity factor for the database. The threshold is divided by this 
+        number to yield the index's sparsity, which represents how many elements per
+        segment will be stored in the index.
+        '''
+        self.sparsity_factor = factor
+
+    def sparsity(self):
+        ''' (self) -> int
+        Returns the sparsity of the index. This represents the number of records per
+        segment that will be stored in the index. The value is always rounded down.
+        '''
+        return self.threshold // self.sparsity_factor
 
     # Path generators
     def current_segment_path(self):

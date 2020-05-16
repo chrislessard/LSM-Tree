@@ -10,9 +10,10 @@ RED = 'RED'
 NIL = 'NIL'
 
 class Node:
-    def __init__(self, key, color, parent, left=None, right=None, value=None):
+    def __init__(self, key, color, parent, left=None, right=None, value=None, segment=None):
         self.key = key
         self.value = value
+        self.segment = segment
         self.color = color
         self.parent = parent
         self.left = left
@@ -81,7 +82,7 @@ class RedBlackTree:
             return list()
         yield from self.root.__iter__()
 
-    def add(self, key, value):
+    def add(self, key, value, segment=None):
         # attempt to find and update the node first
         node = self.find_node(key)
         if node:
@@ -90,7 +91,15 @@ class RedBlackTree:
 
         # add the node
         if not self.root:
-            self.root = Node(key, color=BLACK, parent=None, left=self.NIL_LEAF, right=self.NIL_LEAF, value=value)
+            self.root = Node(
+                key,
+                color=BLACK,
+                parent=None,
+                left=self.NIL_LEAF,
+                right=self.NIL_LEAF,
+                value=value,
+                segment=segment
+                )
             self.count += 1
             return
         parent, node_dir = self._find_parent(key)

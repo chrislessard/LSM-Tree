@@ -448,7 +448,6 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.memtable.contains('sad'), True)
         self.assertEqual(db.memtable.contains('pad'), True)
 
-
     def test_initializing_db_loads_metadata_and_memtable(self):
         '''
         Tests that initializing an new instance of the database loads
@@ -477,7 +476,34 @@ class TestDatabase(unittest.TestCase):
         self.assertTrue(db.memtable.contains('english'))
         self.assertTrue(db.memtable.contains('spanish'))
 
-    
+    # Index
+    def test_set_db_sparsity_factor(self):
+        '''
+        Tests that the sparsity of the database's index can be retrieved.
+        '''
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.set_sparsity_factor(10)
+        self.assertEqual(db.sparsity_factor, 10)
+
+        db.set_sparsity_factor(1000)
+        self.assertEqual(db.sparsity_factor, 1000)
+
+    def test_fetch_db_sparsity(self):
+        '''
+        Tests that the sparsity of the database's index can be retrieved.
+        '''
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.set_threshold(1000000)
+        db.set_sparsity_factor(100)
+        self.assertEqual(db.sparsity(), 10000)
+
+        db.set_threshold(100)
+        db.set_sparsity_factor(4)
+        self.assertEqual(db.sparsity(), 25)
+
+        db.set_threshold(100)
+        db.set_sparsity_factor(7)
+        self.assertEqual(db.sparsity(), 14)
 
 if __name__ == '__main__':
     unittest.main()
