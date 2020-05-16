@@ -2107,6 +2107,36 @@ class RbTreeTests(unittest.TestCase):
         for i in range(1, 99, 2):
             self.assertEqual(rb_tree.ceil(i), i+1)
 
+    def test_ceil_with_string(self):
+        '''
+        Tests the ceil method with string keys
+        '''
+        rb_tree = RedBlackTree()
+        rb_tree.add('chris')
+        # christian
+        rb_tree.add('dan')
+        # dane
+        rb_tree.add('daniel')
+
+        self.assertEqual(rb_tree.ceil('chris'), 'chris')
+        self.assertEqual(rb_tree.ceil('christian'), 'dan')
+        self.assertEqual(rb_tree.ceil('dane'), 'daniel')
+
+    def test_floor_with_string(self):
+        '''
+        Tests the floor method with string keys
+        '''
+        rb_tree = RedBlackTree()
+        rb_tree.add('chris')
+        # christian
+        rb_tree.add('dan')
+        # dane
+        rb_tree.add('daniel')
+
+        self.assertEqual(rb_tree.floor('chris'), 'chris')
+        self.assertEqual(rb_tree.floor('christian'), 'chris')
+        self.assertEqual(rb_tree.floor('dane'), 'dan')
+
     def test_ceil_same_value(self):
         rb_tree = RedBlackTree()
 
