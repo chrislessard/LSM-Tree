@@ -334,6 +334,28 @@ class SSTable():
         '''
         return self.threshold // self.sparsity_factor
 
+    def repopulate_index(self):
+        ''' (self) -> None
+
+        Repopulates the index stored in the database by parsing each segment
+        on disk.
+        '''
+        self.index = RedBlackTree()
+        for segment in self.segments:
+            path = self.segment_path(segment)
+
+            counter = self.sparsity()
+            bytes = 0
+            with open(path, 'r') as s:
+                for line in s:
+                    key, val = line.strip().split(',')
+                    if counter == 1:
+                        self.index.add(key, val, offset=bytes, segment=segment)
+                        counter = self.sparsity() + 1
+
+                    bytes += len(line)
+                    counter -= 1
+
     # Path generators
     def current_segment_path(self):
         return self.segments_directory + self.current_segment

@@ -702,6 +702,60 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.db_get('christian'), 'dior')
         self.assertEqual(db.db_get('daniel'), 'lessard')
 
+    def test_repopulate_index(self):
+        '''
+        Tests that the index is cleared and repopulated by
+        calling the db's repopulate_index method.
+        '''
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.index.add('chris', offset=10)
+        db.index.add('lessard', offset=52)
+        db.segments = ['segment1', 'segment2']
+
+        # Write every two records
+        db.threshold = 10
+        db.set_sparsity_factor(5) 
+
+        with open(TEST_BASEPATH + 'segment1', 'w') as s:
+            s.write('red,1\n')
+            s.write('blue,2\n')
+            s.write('green,3\n')
+            s.write('purple,4\n')
+
+        with open(TEST_BASEPATH + 'segment2', 'w') as s:
+            s.write('cyan,5\n')
+            s.write('magenta,6\n')
+            s.write('yellow,7\n')
+            s.write('black,8\n')
+
+        db.repopulate_index()
+
+        blue_node = db.index.find_node('blue')
+        self.assertIsNotNone(blue_node)
+        self.assertEqual(blue_node.key, 'blue')
+        self.assertEqual(blue_node.offset, 6)
+
+        with open(TEST_BASEPATH + blue_node.segment, 'r') as s:
+            s.seek(blue_node.offset)
+            line = s.readline()
+        
+        self.assertEqual(line, 'blue,2\n')
+
+        magenta_node = db.index.find_node('magenta')
+        self.assertIsNotNone(magenta_node)
+        self.assertEqual(magenta_node.key, 'magenta')
+        self.assertEqual(magenta_node.offset, 7)
+
+        with open(TEST_BASEPATH + magenta_node.segment, 'r') as s:
+            s.seek(magenta_node.offset)
+            line = s.readline()
+
+        self.assertEqual(line, 'magenta,6\n')
+
+        self.assertFalse(db.index.contains('red'))
+        self.assertFalse(db.index.contains('green'))
+        self.assertFalse(db.index.contains('cyan'))
+        self.assertFalse(db.index.contains('yellow'))
 
 if __name__ == '__main__':
     unittest.main()
