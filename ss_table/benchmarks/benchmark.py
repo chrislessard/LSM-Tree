@@ -30,3 +30,7 @@ benchmark_get(db)
 """
 print('Get benchmark:', timeit.timeit(benchmark_get_str, setup=setup, number=1))
 
+for filename in os.listdir(path):
+    os.remove(path + filename)
+
+os.rmdir(path)
