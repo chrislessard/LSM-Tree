@@ -1,6 +1,6 @@
-# SSTable-POC
+# LSMTree-POC
 
-To read the full article associated with this codebase, visit [the link here](https://www.notion.so/Implementing-a-basic-SSTable-363b7bbd98674291ba80edd1d61d8a0a).
+To read the full article associated with this codebase, visit [the link here](https://www.notion.so/Implementing-a-basic-LSMTree-363b7bbd98674291ba80edd1d61d8a0a).
 
 ## Dependencies
 
@@ -8,15 +8,15 @@ You'll need python3 in order to run this code.
 
 ## Project use and description
 
-To use the project, cd into the ss_table directory and invoke `python main.py`. The program will create csv files on disk. These contain the persisted records. Metadata and a write-ahead-log will also be created in this directory. Tests and benchmark code use their own directories.
+To use the project, invoke `python main.py`. The program will create csv files on disk. These contain the persisted records. Metadata and a write-ahead-log will also be created in this directory. Tests and benchmark code use their own directories.
 
 ## About
 
-This is a basic implementation of a a Sorted String Table (SSTable). It uses the augmented log as its basis, making one key change: it guarantees that segments are sorted by key. The interface is the same as the AugmentedLog's.
+This is a basic implementation of a a Sorted String Table (LSMTree). It uses the augmented log as its basis, making one key change: it guarantees that segments are sorted by key. The interface is the same as the AugmentedLog's.
 
 It also introduces a memtable into memory, which is a RedBlack tree of nodes containing key-value pairs. Thanks to [stanislavkozlovski](https://github.com/stanislavkozlovski/Red-Black-Tree/blob/master/rb_tree.py) for the implementation. I've augmented it to support keys and values, as well as support the update operation and provide an inorder traversal of the nodes for the purpose of writing the memtable to disk.
 
-You'll notice when you use the SSTable that segments aren't actively being created like they were for the other two implementations. This is because the memtable is only flushed to disk when the total size of the key/value pairs stored exceeds the segment treshold.
+You'll notice when you use the LSMTree that segments aren't actively being created like they were for the other two implementations. This is because the memtable is only flushed to disk when the total size of the key/value pairs stored exceeds the segment treshold.
 
 Since the memtable isn't persistent, we back it up to disk on each operation using the standard append-only log, which serves solely the purpose of re-populating the memtable in the event of a system failure.
 
@@ -24,15 +24,15 @@ The merging algorithm implementation is different, since it can leverage the fac
 
 ## Testing
 
-`cd` into the ss_table directory and invoke `python3 -m unittest test.ss_table_tests`.
+Invoke `python3 -m unittest test.ss_table_tests`.
 
 ## Benchmarking
 
-`cd` into the ss_table directory and invoke `python3 benchmarks/benchmark.py`
+Invoke `python3 benchmarks/benchmark.py`
 
 ## Notes
 
-Here are some places where this proof of concept implementation of an SSTable could be improved:
+Here are some places where this proof of concept implementation of an LSMTree could be improved:
 
 ### Testing framework
 

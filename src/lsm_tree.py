@@ -6,9 +6,9 @@ import pickle
 
 class LSMTree():
     def __init__(self, segment_basename, segments_directory, wal_basename):
-        ''' (self, str, str, str) -> SSTable
+        ''' (self, str, str, str) -> LSMTree
 
-        Initialize a new SSTable with:
+        Initialize a new LSM Tree with:
 
         - A first segment called segment_basename
         - A segments directory called segments_directory
