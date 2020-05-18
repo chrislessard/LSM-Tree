@@ -8,29 +8,9 @@ You'll need python3 in order to run this code.
 
 ## Project use and description
 
-The project contains two implementations of key-values stores. To use one of them, cd into its directory and invoke `python3 main.py`.
+To use the project, cd into the ss_table directory and invoke `python main.py`. The program will create csv files on disk. These contain the persisted records. Metadata and a write-ahead-log will also be created in this directory. Tests and benchmark code use their own directories.
 
-All versions of the store will create csv files on disk. These represent the persistent versions of they key value store. The AugmentedLog and SSTable will additionally place these .csv files in a directory called segments.
-
-### augmented_log
-
-This is an improved version of the basic_log, supporting some functionality common to SSTables, namely the creation, merging and compaction of segments. The interface is as follows:
-
-1. store {key} {data} : store the pair (key, value) in the database
-2. get {key} : retrieve the most recent value on disk associated with key
-3. compact_segments : run the compact and merge algorithm on the segments on disk.
-4. load_index : scan the current segment, and load its values into the index. this requires a linear parse of the file and is slow!
-5. save_index_snapshot {filename} : save a snapshot of the index to disk, as a pickle dump named {filename}
-6. load_index_snapshot {filename} : load an aforementioned snapshot on the index to disks
-7. set_threshold {number of bytes} : set the new segment threshold for the db in bytes
-
-The main improvement over the basic_log comes in the use of an index to perform fast lookups on key values pairs, and the introduction of segments and the compaction algorithm to reclaim diskspace and speed up reads.
-
-#### Testing
-
-`cd` into the directory and invoke `python augmented_log_tests.py`.
-
-### ss_table
+## About
 
 This is a basic implementation of a a Sorted String Table (SSTable). It uses the augmented log as its basis, making one key change: it guarantees that segments are sorted by key. The interface is the same as the AugmentedLog's.
 
@@ -42,9 +22,13 @@ Since the memtable isn't persistent, we back it up to disk on each operation usi
 
 The merging algorithm implementation is different, since it can leverage the fact that segments are sorted.
 
-#### Testing
+## Testing
 
-`cd` into the directory and invoke `python3 -m unittest test.ss_table_tests`.
+`cd` into the ss_table directory and invoke `python3 -m unittest test.ss_table_tests`.
+
+## Benchmarking
+
+`cd` into the ss_table directory and invoke `python3 benchmarks/benchmark.py`
 
 ## Notes
 
