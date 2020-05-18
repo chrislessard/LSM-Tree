@@ -1,12 +1,12 @@
-from src.ss_table import SSTable
+from src.lsm_tree import LSMTree
 
 SEGMENTS_DIRECTORY = 'segments/'
-SEGMENT_BASENAME = 'sstable-1'
+SEGMENT_BASENAME = 'LSMTree-1'
 WAL_BASENAME = 'memtable_bkup'
 
 def main():
     '''
-    Run the SSTable interface.
+    Run the LSMTree interface.
     '''
     usage_msg = [
         'Commands: ',
@@ -18,7 +18,7 @@ def main():
         'exit'
     ]
 
-    db = SSTable(SEGMENT_BASENAME, SEGMENTS_DIRECTORY, WAL_BASENAME)
+    db = LSMTree(SEGMENT_BASENAME, SEGMENTS_DIRECTORY, WAL_BASENAME)
 
     print('\n\t'.join(usage_msg))
 

@@ -4,7 +4,7 @@ from .red_black_tree import RedBlackTree
 from .append_log import AppendLog
 import pickle
 
-class SSTable():
+class LSMTree():
     def __init__(self, segment_basename, segments_directory, wal_basename):
         ''' (self, str, str, str) -> SSTable
 

@@ -3,7 +3,7 @@ import sys, os, timeit, random, string
 # ffs python
 file_directory = sys.path[0] 
 sys.path.insert(1, os.path.dirname(file_directory))
-from src import ss_table as s
+from src import lsm_tree as s
 
 path = file_directory + '/benchmark_segments/'
 
@@ -28,7 +28,7 @@ def benchmark_random_reads(db, pairs):
 
 setup = """
 from __main__ import s, benchmark_store, benchmark_get, benchmark_random_writes, path
-db = s.SSTable('test_file-1', path, 'bkup')
+db = s.LSMTree('test_file-1', path, 'bkup')
 """
 
 # Benchmark lots of continuous writes

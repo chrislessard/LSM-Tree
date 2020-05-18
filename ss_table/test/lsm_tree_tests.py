@@ -2,7 +2,7 @@ import unittest
 import os
 import pickle
 from pathlib import Path
-from src.ss_table import SSTable
+from src.lsm_tree import LSMTree
 from src.red_black_tree import RedBlackTree
 
 TEST_FILENAME = 'test_file-1'
@@ -27,7 +27,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests the db_set functionality.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         
         db.db_set('1', 'test1')
         db.db_set('2', 'test2')
@@ -42,7 +42,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests the db_set functionality.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.threshold = 10
         
         db.db_set('1', 'test1')
@@ -59,7 +59,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(node2.value, 'test2')
 
     def test_in_order_traversal(self):
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.memtable.add('chris', 'lessard')
         db.memtable.add('daniel', 'lessard')
         db.memtable.add('debra', 'brown')
@@ -74,7 +74,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that the memtable can be flushed to disk
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.memtable.add('chris', 'lessard')
         db.memtable.add('daniel', 'lessard')
         db.flush_memtable_to_disk(TESTPATH)
@@ -89,7 +89,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that db_set invocations write the values to the write-ahead-log.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         
         # The singleton instance will persist throughout the suite.
         # This test tests its functionality directory, so we need to wipe
@@ -111,7 +111,7 @@ class TestDatabase(unittest.TestCase):
         Tests that adding a new value for a key that already exists in the
         memtable does not change the value of the threshold.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.db_set('mr', 'bean')
         self.assertEqual(db.memtable.total_bytes, 6)
         db.db_set('mr', 'toast')
@@ -122,7 +122,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests the retrieval of a single value written into the db
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.db_set('chris', 'lessard')
         val = db.db_get('chris')
 
@@ -132,7 +132,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests the db_get functionality when the db threshold is low.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.threshold = 20
         db.db_set('chris','lessard')
         db.db_set('daniel','lessard')
@@ -148,7 +148,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests the db_get functionality when the key has not been stored in the db.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.threshold = 20
         db.db_set('chris','lessard')
         db.db_set('daniel','lessard')
@@ -161,7 +161,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that db_get retrieves the most recent key value.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
 
         db.db_set('chris', 'lessard')
         db.db_set('chris', 'martinez')
@@ -171,7 +171,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that db_get retrieves the most recent key value.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.threshold = 10
 
         db.db_set('chris', 'lessard')
@@ -182,7 +182,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests the db_get functionality.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.threshold = 10
 
         db.db_set('chris', 'lessard')
@@ -200,7 +200,7 @@ class TestDatabase(unittest.TestCase):
         ''' 
         Tests that the segment path can be retrieved for any segment
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         self.assertEqual(db.segment_path('segment1'), TEST_BASEPATH + 'segment1')
         self.assertEqual(db.segment_path('segment5'), TEST_BASEPATH + 'segment5')
 
@@ -209,7 +209,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that new segments are created and used when the threshold is reached.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.threshold = 10
         db.db_set('abc', 'cba')
         db.db_set('def', 'fed') # This will cross the threshold
@@ -233,7 +233,7 @@ class TestDatabase(unittest.TestCase):
             s.write('2,test8\n')
             s.write('3,test9\n')
 
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.compact_segment(TEST_FILENAME)
 
         with open(TEST_BASEPATH + TEST_FILENAME, 'r') as s:
@@ -258,7 +258,7 @@ class TestDatabase(unittest.TestCase):
             s.write('1,test7\n')
             s.write('2,test8\n')
 
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.segments = segments
         db.compact()
 
@@ -294,7 +294,7 @@ class TestDatabase(unittest.TestCase):
             s.write('3,test9\n')
             s.write('2,testc\n')
 
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.segments = segments
         db.compact()
 
@@ -338,7 +338,7 @@ class TestDatabase(unittest.TestCase):
             s.write('5,love\n')
             s.write('6,osrs\n')
 
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.segments = segments
         db.threshold = 14 * 2
         db.compact()
@@ -373,7 +373,7 @@ class TestDatabase(unittest.TestCase):
             s.write('2,test6\n')
             s.write('3,test5\n')
 
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.segments = segments
 
         db.merge_segments(segments[0], segments[1])
@@ -394,7 +394,7 @@ class TestDatabase(unittest.TestCase):
         '''
         segments = ['segment-1', 'segment-4', 'segment-6', 'segment-7']
         expected_result = ['segment-1', 'segment-2', 'segment-3', 'segment-4']
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         result = db.rename_segments(segments)
         self.assertEqual(result, expected_result)
 
@@ -402,14 +402,14 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that the user can reset the threshold to the value they want.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.threshold = 500
         db.set_threshold(1000)
 
         self.assertEqual(db.threshold, 1000)
 
     def test_save_metadata_saves_metadata(self):
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         segments = ['segment-1', 'segment-2', 'segment-3']
         db.segments = segments
 
@@ -427,7 +427,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Checks that pre-existing segments are loaded into the system at run time.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         segments = ['segment-1', 'segment-2', 'segment-3']
         db.segments = segments
         db.current_segment = segments[-1]
@@ -437,7 +437,7 @@ class TestDatabase(unittest.TestCase):
         db.save_metadata() # pickle will be saved
         del db
 
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.load_metadata()
 
         self.assertEqual(db.segments, segments)
@@ -447,7 +447,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that the memtable can be restored from the write-ahead-log.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         # The singleton instance will persist throughout the suite.
         # This test tests its functionality directory, so we need to wipe
         # its state.
@@ -460,7 +460,7 @@ class TestDatabase(unittest.TestCase):
         # This code is run by default upon db instantiation, 
         # so we clear the memtable here to make sure that the method works
         # individually
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.memtable = RedBlackTree()
 
         db.restore_memtable()
@@ -472,7 +472,7 @@ class TestDatabase(unittest.TestCase):
         Tests that initializing an new instance of the database loads
         metadata and memtable info.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.memtable_wal().clear()
 
         segments = ['segment1', 'segment2', 'segment3', 'segment4', 'segment5']
@@ -487,7 +487,7 @@ class TestDatabase(unittest.TestCase):
 
         del db
 
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
 
         self.assertEqual(db.segments, segments)
         self.assertEqual(db.current_segment, 'segment5')
@@ -500,7 +500,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that the sparsity of the database's index can be retrieved.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.set_sparsity_factor(10)
         self.assertEqual(db.sparsity_factor, 10)
 
@@ -511,7 +511,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that the sparsity of the database's index can be retrieved.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.set_threshold(1000000)
         db.set_sparsity_factor(100)
         self.assertEqual(db.sparsity(), 10000)
@@ -528,7 +528,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that flushing the memtable to disk populates the index.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.set_threshold(100)
         db.set_sparsity_factor(25)
 
@@ -553,7 +553,7 @@ class TestDatabase(unittest.TestCase):
         Tests that flushing the memtable to disk populates the index and stores
         the current segments within each node.s
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.set_threshold(100)
         db.set_sparsity_factor(25)
 
@@ -585,7 +585,7 @@ class TestDatabase(unittest.TestCase):
         Tests that flushing the memtable to disk stores the correct
         offsets into disk in the index.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.set_threshold(100)
         db.set_sparsity_factor(25)
 
@@ -620,7 +620,7 @@ class TestDatabase(unittest.TestCase):
         Tests that indexed values can be retrieved appropriately
         from disk when there is one segment.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.set_threshold(100)
         db.set_sparsity_factor(25)
 
@@ -648,7 +648,7 @@ class TestDatabase(unittest.TestCase):
         '''
         TESTPATH = TEST_BASEPATH + TEST_FILENAME
 
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.set_threshold(100)
         db.set_sparsity_factor(25)
 
@@ -693,7 +693,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(value, '234')
 
     def test_db_get_uses_index(self):
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         with open(TEST_BASEPATH + 'segment2', 'w') as s:
             s.write('chris,lessard\n')
 
@@ -702,7 +702,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.db_get('chris'), 'lessard')
 
     def test_db_get_uses_index_with_floor(self):
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         with open(TEST_BASEPATH + 'segment2', 'w') as s:
             s.write('chris,lessard\n')
             s.write('christian,dior\n')
@@ -718,7 +718,7 @@ class TestDatabase(unittest.TestCase):
         Tests that the repopulate_index method correctly stores
         offsets to locations of the records on disk.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.index.add('chris', offset=10)
         db.index.add('lessard', offset=52)
         db.segments = ['segment1', 'segment2']
@@ -764,7 +764,7 @@ class TestDatabase(unittest.TestCase):
         Tests that the index is cleared and repopulated by
         calling the db's repopulate_index method.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.index.add('chris', offset=10)
         db.index.add('lessard', offset=52)
         db.segments = ['segment1', 'segment2']
@@ -804,7 +804,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that the compaction algorithm repopulates the index.
         '''
-        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.segments = ['segment1', 'segment2', 'segment3']
         # Write every record to index
         db.threshold = 35
