@@ -106,34 +106,33 @@ class SSTable():
             self.compact_segment(segment)
 
         # Reduce segments
-        compacted = []
+        fully_compacted_segments = []
         segments = self.segments[:]
 
         while len(segments) > 1:
             # pop two segs from segments
             seg1, seg2 = segments.pop(0), segments.pop(0)
 
-            # check if their total size exceeds the threshold
-            # This isnt quite right. it might be popular to reduce to contiguous
-            # segments even if their current size exceedes the threshold, since 
-            # they made share keys
             seg1_size = Path(self.segments_directory + seg1).stat().st_size
             seg2_size = Path(self.segments_directory + seg2).stat().st_size
             total = seg1_size + seg2_size
 
             if total > self.threshold:
-                # add seg1 segment to compacted and seg2 back to start of segments
-                compacted.append(seg1)
+                # add seg1 segment to fully_compacted_segments and seg2 back to start of segments
+                fully_compacted_segments.append(seg1)
                 segments = [seg2] + segments
             else:
                 # merge the two segments, conserving the name of the seg1 one
                 merged_segment = self.merge_segments(seg1, seg2)
                 segments = [merged_segment] + segments
 
-        result = compacted + segments
+        result = fully_compacted_segments + segments
 
         # the leftover segments wont be ordered properly by name
         self.segments = self.rename_segment_files(result)
+
+        # Repopulate the index
+        self.repopulate_index()
 
     def set_threshold(self, threshold):
         ''' (self, int) -> None
@@ -335,7 +334,7 @@ class SSTable():
         return self.threshold // self.sparsity_factor
 
     def repopulate_index(self):
-        ''' (self) -> None
+        '''(self) -> None
 
         Repopulates the index stored in the database by parsing each segment
         on disk.

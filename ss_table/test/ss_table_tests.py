@@ -783,12 +783,46 @@ class TestDatabase(unittest.TestCase):
         magenta_node = db.index.find_node('magenta')
         self.assertIsNotNone(magenta_node)
         self.assertEqual(magenta_node.key, 'magenta')
-        self.assertEqual(magenta_node.offset, 7)
 
         self.assertFalse(db.index.contains('red'))
         self.assertFalse(db.index.contains('green'))
         self.assertFalse(db.index.contains('cyan'))
         self.assertFalse(db.index.contains('yellow'))
+
+    def test_compaction_repopulates_index(self):
+        '''
+        Tests that the compaction algorithm repopulates the index.
+        '''
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.segments = ['segment1', 'segment2', 'segment3']
+        # Write every record to index
+        db.threshold = 35
+        db.sparsity_factor = 35
+
+        with open(TEST_BASEPATH + 'segment1', 'w') as s:
+            s.write('chris,lessard\n')
+            s.write('john,burman\n')
+            s.write('alex,rodriguez\n')
+
+        with open(TEST_BASEPATH + 'segment2', 'w') as s:
+            s.write('chris,manson\n')
+            s.write('john,alexander\n')
+            s.write('alex,rodriguez\n')
+
+        with open(TEST_BASEPATH + 'segment3', 'w') as s:
+            s.write('chris,manson\n')
+            s.write('john,tidal\n')
+            s.write('alex,rodriguez\n')
+
+        db.index.add('chris,lessard', offset='0', segment='segment1')
+        db.index.add('john,tidal', offset='13', segment='segment2')
+        db.index.add('alex,rodriguez', offset='24', segment='segment3')
+
+        db.compact()
+
+        self.assertEqual(db.index.find_node('chris').value, 'manson')
+        self.assertEqual(db.index.find_node('alex').value, 'rodriguez')
+        self.assertEqual(db.index.find_node('john').value, 'tidal')
 
 if __name__ == '__main__':
     unittest.main()
