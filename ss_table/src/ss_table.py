@@ -39,14 +39,18 @@ class SSTable():
         ''' (self, str, str) -> None
         Stores a new key value pair in the DB
         '''
-        # Check if we need a new segment
+        # Check if we can save effort by updating the memtable in place
+        node = self.memtable.find_node(key)
+        if node:
+            node.value = value
+            return
+
+        # A new key means the size of the memtable will have increased,
+        # so we must compare it to the threshold
         additional_size = len(key) + len(value)
         if self.memtable.total_bytes + additional_size > self.threshold:
-            # Flush memtable to disk
-            self.flush_memtable(self.current_segment_path())
+            self.flush_memtable_to_disk(self.current_segment_path())
             self.memtable = RedBlackTree()
-
-            # Clear the log file
             self.memtable_wal().clear()
 
             # Update bookkeeping metadata
@@ -55,9 +59,8 @@ class SSTable():
             self.current_segment = new_seg_name
             self.memtable.total_bytes = 0
 
-        # Write to memtable backup
+        # Write to memtable write ahead log
         log = self.as_log_entry(key, value)
-
         self.memtable_wal().write(log)
 
         # Write to memtable
@@ -192,7 +195,7 @@ class SSTable():
                     self.memtable.total_bytes += (len(key) + len(value) + 2)
 
     # Write helpers
-    def flush_memtable(self, path):
+    def flush_memtable_to_disk(self, path):
         ''' (self, str) -> None
         Writes the contents of the current memtable to disk and wipes the current memtable.
         '''
@@ -370,28 +373,3 @@ class SSTable():
         Returns the path to the given segment_name.
         '''
         return self.segments_directory + segment_name
-
-# Basic benchmarking code
-
-if __name__ == "__main__":
-    import timeit
-
-    setup = """
-from __main__ import SSTable
-db = SSTable('test_file-1', 'segments/', 'bkup')
-"""
-    def benchmark_store(db):
-        for i in range(100000):
-            db.db_set('chris', 'lessard')
-
-    def benchmark_get(db):
-        db.db_get('daniel')
-        
-    benchmark_store_str = """benchmark_store(db)"""
-    benchmark_get_str = """
-db.db_set('daniel', 'lessard')
-benchmark_get(db)
-"""
-
-    print('Store benchmark:', timeit.timeit(benchmark_store_str, setup=setup, number=1))
-    print('Get benchmark:', timeit.timeit(benchmark_get_str, setup=setup, number=1))

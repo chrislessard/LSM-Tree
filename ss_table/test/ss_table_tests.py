@@ -77,7 +77,7 @@ class TestDatabase(unittest.TestCase):
         db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.memtable.add('chris', 'lessard')
         db.memtable.add('daniel', 'lessard')
-        db.flush_memtable(TESTPATH)
+        db.flush_memtable_to_disk(TESTPATH)
 
         with open(TESTPATH, 'r') as s:
             lines = s.readlines()
@@ -105,6 +105,17 @@ class TestDatabase(unittest.TestCase):
             lines = s.readlines()
         
         self.assertEqual(len(lines), 2)
+
+    def test_key_update_does_not_increment_memtable_total_bytes(self):
+        '''
+        Tests that adding a new value for a key that already exists in the
+        memtable does not change the value of the threshold.
+        '''
+        db = SSTable(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.db_set('mr', 'bean')
+        self.assertEqual(db.memtable.total_bytes, 6)
+        db.db_set('mr', 'toast')
+        self.assertEqual(db.memtable.total_bytes, 6)
 
     # db_get
     def test_db_get_single_val_retrieval(self):
@@ -530,7 +541,7 @@ class TestDatabase(unittest.TestCase):
         db.db_set('stu', '901')
         db.db_set('vwx', '234')
 
-        db.flush_memtable(TESTPATH)
+        db.flush_memtable_to_disk(TESTPATH)
 
         in_order = db.index.in_order()
         self.assertEqual(len(in_order), 2)
@@ -551,7 +562,7 @@ class TestDatabase(unittest.TestCase):
         db.db_set('ghi', '789')
         db.db_set('jkl', '012')
 
-        db.flush_memtable(TESTPATH)
+        db.flush_memtable_to_disk(TESTPATH)
 
         db.db_set('mno', '345')
         db.db_set('pqr', '678')
@@ -561,7 +572,7 @@ class TestDatabase(unittest.TestCase):
         # Simulate crossing threshold
         db.segments = ['test_file-1', 'test_file-2']
         db.current_segment = 'test_file-2'
-        db.flush_memtable(TESTPATH)
+        db.flush_memtable_to_disk(TESTPATH)
 
         segment1 = db.index.find_node('jkl').segment
         segment2 = db.index.find_node('vwx').segment
@@ -587,7 +598,7 @@ class TestDatabase(unittest.TestCase):
         db.db_set('stu', '901')
         db.db_set('vwx', '234')
 
-        db.flush_memtable(TESTPATH)
+        db.flush_memtable_to_disk(TESTPATH)
 
         offset1 = db.index.find_node('jkl').offset
         offset2 = db.index.find_node('vwx').offset
@@ -618,7 +629,7 @@ class TestDatabase(unittest.TestCase):
         db.db_set('ghi', '789')
         db.db_set('jkl', '012')
 
-        db.flush_memtable(TESTPATH)
+        db.flush_memtable_to_disk(TESTPATH)
 
         offset1 = db.index.find_node('jkl').offset
 
@@ -646,14 +657,14 @@ class TestDatabase(unittest.TestCase):
         db.db_set('ghi', '789')
         db.db_set('jkl', '012')
 
-        db.flush_memtable(TESTPATH)
+        db.flush_memtable_to_disk(TESTPATH)
 
         db.db_set('mno', '345')
         db.db_set('pqr', '678')
         db.db_set('stu', '901')
         db.db_set('vwx', '234')
 
-        db.flush_memtable(TESTPATH)
+        db.flush_memtable_to_disk(TESTPATH)
         'test_file-2'
 
         # First segment
