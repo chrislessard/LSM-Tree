@@ -8,20 +8,9 @@ You'll need python3 in order to run this code.
 
 ## Project use and description
 
-The project contains three implementations of key-values stores. To use one of them, cd into its directory and invoke `python3 main.py`.
+The project contains two implementations of key-values stores. To use one of them, cd into its directory and invoke `python3 main.py`.
 
 All versions of the store will create csv files on disk. These represent the persistent versions of they key value store. The AugmentedLog and SSTable will additionally place these .csv files in a directory called segments.
-
-### basic_log
-
-This is an extremely simple key value store, supporting two commands:
-
-1. store {key} {data} : store the pair (key, value) in the database
-2. get {key} : retrieve the most recent value on disk associated with key
-
-#### Testing
-
-`cd` into the directory and `invoke python basic_log_tests.py`.
 
 ### augmented_log
 
