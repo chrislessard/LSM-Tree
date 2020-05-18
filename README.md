@@ -57,26 +57,20 @@ The merging algorithm implementation is different, since it can leverage the fac
 
 `cd` into the directory and invoke `python3 -m unittest test.ss_table_tests`.
 
-## Miscellaneous improvements
+## Notes
 
 Here are some places where this proof of concept implementation of an SSTable could be improved:
 
-### Bug: Infer the number of segments already on disk
-
-The functionality currently works fine for situations where the user has not left the interface. If they do, then load it up again, the AugmentedTable and SSTable should scan the segments directory to infer how many there are and which one it should use.
-
 ### Testing framework
 
-Unnittest is a bit basic and the tests contain a lot of redundancy. In a proper implementation, it would be better to port the tests to a more complete testing framework. It would also be nice to see if there isn't a better way to test disk operations.
+Unnittest is a bit basic and the tests contain a lot of redundancy. It would be better to port the tests to a more complete testing framework. It would also be nice to see if there isn't a better way to test disk operations. A quick fix would be to extract common logic for groups of tests into functions that can be run as more granular setup/teardown.
 
-### Testing by using class methods
+### IO connections
 
-A lot of the tests were set up by manually creating files and calling functions. For instance, this was done in a case where a segment would be manually written to disk, rather than by calling db_set several times over. Generally speaking, I think it's ok to use internal methods in other unittests as long as those method's contracts don't change (i.e. they allow for refactoring but not full on redefinition).
+The append only log requires that every write to the memtable automatically be added to a write-ahead-log on disk. In a naive approach, this involves opening a new file IO stream for each write, which is extremely expensive and seriously detracts from the performance of the database. This was the motivation for the singleton class, which can be leveraged to write and flush to disk without incurring the same expense.
 
-### How often we write to disk
+The class could also store an open filestream as a class variable. This would avoid some issues around testing, in which the singleton persists throughout different test cases and needs to be cleared manually in setup. I didn't opt for this since it felt a little dirty.
 
-In the basic implementation of the key value store, we wrote to disk as soon as we could - every time a new value came in. In the SSTable approach, we prefer periodic flushes to disk to as to avoid regularly incurring the lag of connecting to the disk. The caveat in this strategy is that should our system crash, we lose the memtable. I've added a basic append-only-log to backup the memtable, but the amount of FileIO connections being made takes a serious toll on the writes. It would be good to find a more efficient way to overcome this problem.
+### Adding a bloom filter
 
-### Adding a sparse index to the memory table
-
-We can further improve the SSTable by adding a sparse index. It would only store some keys. If we cant find a value we're searching for in the index, we could leverage it to determine the appropriate range ('Christina' would be stored between 'Chris' and 'Daniel', for instance). Using the lower part of this range, we could read into disk and begin scanning through to the other boundary, since we know that the keys are sorted. The RedBlack tree supports these queries in its ciel and floor functions.
+A bloom filter is a probabilistic data structure that can efficiently inform us if a key is not in the database. Introducing one would allow the system to quickly determine if a key wasn't present, instead of searching through the memtable and every segment on disk.
