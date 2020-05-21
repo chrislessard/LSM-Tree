@@ -113,7 +113,6 @@ class LSMTree():
         segments = self.segments[:]
 
         while len(segments) > 1:
-            # pop two segs from segments
             seg1, seg2 = segments.pop(0), segments.pop(0)
 
             seg1_size = Path(self.segments_directory + seg1).stat().st_size
