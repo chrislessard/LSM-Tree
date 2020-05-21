@@ -90,12 +90,6 @@ class RedBlackTree:
         yield from self.root.__iter__()
 
     def add(self, key, value=None, offset=None, segment=None):
-        # attempt to find and update the node first
-        node = self.find_node(key)
-        if node:
-            node.value = value
-            return
-
         # add the node
         if not self.root:
             self.root = Node(
@@ -112,7 +106,9 @@ class RedBlackTree:
             return
         parent, node_dir = self._find_parent(key)
         if node_dir is None:
+            parent.value = value
             return  # key is in the tree
+
         new_node = Node(
             key=key, 
             color=RED, 
@@ -516,7 +512,7 @@ class RedBlackTree:
             Return the appropriate parent node for our new node as well as the side it should be on
             """
             if key == parent.key:
-                return None, None
+                return parent, None
             elif parent.key < key:
                 if parent.right.color == NIL:  # no more to go
                     return parent, 'R'
