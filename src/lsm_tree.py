@@ -104,17 +104,18 @@ class LSMTree():
         while len(segments) > 1:
             seg1, seg2 = segments.pop(0), segments.pop(0)
 
-            seg1_size = Path(self.segments_directory + seg1).stat().st_size
-            seg2_size = Path(self.segments_directory + seg2).stat().st_size
+            seg1_size = self.get_file_size(self.segments_directory + seg1)
+            seg2_size = self.get_file_size(self.segments_directory + seg2)
             total = seg1_size + seg2_size
 
             if total > self.threshold:
-                # add seg1 segment to fully_compacted_segments and seg2 back to start of segments
+                # seg1 can no longer be compacted. seg2 can be compacted with
+                # other remaining segments
                 fully_compacted_segments.append(seg1)
                 segments = [seg2] + segments
             else:
                 # merge the two segments, conserving the name of the seg1 one
-                merged_segment = self.merge_segments(seg1, seg2)
+                merged_segment = self.merge_into_first_segment(seg1, seg2)
                 segments = [merged_segment] + segments
 
         result = fully_compacted_segments + segments
@@ -240,7 +241,7 @@ class LSMTree():
         return str(key) + ',' + (value) + '\n'
 
     # Compaction and merge helpers
-    def merge_segments(self, segment1, segment2):
+    def merge_into_first_segment(self, segment1, segment2):
         ''' (self, str, str) -> str
         Concatenates the contents of the files represented byt segment1 and
         segment 2, erases the second segment file and returns the name of the
@@ -330,6 +331,9 @@ class LSMTree():
             rename_file(old_path, new_path)
 
         return corrected_names
+
+    def get_file_size(self, path):
+        return Path(path).stat().st_size
 
     # Index helpers
     def sparsity(self):

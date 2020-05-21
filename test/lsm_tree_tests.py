@@ -376,7 +376,7 @@ class TestDatabase(unittest.TestCase):
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.segments = segments
 
-        db.merge_segments(segments[0], segments[1])
+        db.merge_into_first_segment(segments[0], segments[1])
 
         with open(TEST_BASEPATH + 'test_file-1', 'r') as s:
             segment_lines = s.readlines()
