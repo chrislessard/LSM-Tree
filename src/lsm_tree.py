@@ -89,6 +89,7 @@ class LSMTree():
                     if k == key:
                         return v.strip()
 
+        # Search through all segments
         segments = self.segments[:]
         while len(segments):
             segment = segments.pop()

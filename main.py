@@ -14,6 +14,7 @@ def main():
         'get {key}',
         'compact_segments',
         'set_threshold {number of bytes}',
+        'set_sparsity {value}',
         'help',
         'exit'
     ]
@@ -36,12 +37,16 @@ def main():
         elif cmd[0] == 'compact_segments':
             print('\nCompacting segments on disk ...')
             db.compact()
-            print('Finished compacting segments.')
+            print('Done\n')
         elif cmd[0] == 'set_threshold':
             threshold = int(cmd[1])
             print('\nSetting new threshold ...')
             db.set_threshold(threshold)
             print('Done\n')
+        elif cmd[0] == 'set_sparsity':
+            sparsity = int(cmd[1])
+            db.set_sparsity_factor(sparsity)
+            print('\nSet new sparsity factor.\n')
         elif cmd[0] == 'help':
             print('\n\t'.join(usage_msg))
         elif cmd[0] == 'exit':
