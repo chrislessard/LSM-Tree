@@ -7,7 +7,6 @@ import pickle
 class LSMTree():
     def __init__(self, segment_basename, segments_directory, wal_basename):
         ''' (self, str, str, str) -> LSMTree
-
         Initialize a new LSM Tree with:
 
         - A first segment called segment_basename
@@ -89,18 +88,7 @@ class LSMTree():
                     if k == key:
                         return v.strip()
 
-        # Search through all segments
-        segments = self.segments[:]
-        while len(segments):
-            segment = segments.pop()
-            segment_path = self.segments_directory + segment
-
-            val = None
-            with open(segment_path, 'r') as s:
-                for line in s:
-                    k, v = line.split(',')
-                    if k == key:
-                        return v.strip()
+        return self.search_all_segments(key)
 
     def compact(self):
         ''' (self) -> None
@@ -144,6 +132,16 @@ class LSMTree():
         '''
         self.threshold = threshold
 
+    def set_sparsity_factor(self, factor):
+        ''' (self, int) -> None
+        Sets the sparsity factor for the database. The threshold is divided by this 
+        number to yield the index's sparsity, which represents how many elements per
+        segment will be stored in the index.
+
+        The higher this number, the more records will be stored.
+        '''
+        self.sparsity_factor = factor
+
     ### Helper methods
 
     def memtable_wal(self):
@@ -151,6 +149,22 @@ class LSMTree():
         Returns the full path to the memtable backup.
         '''
         return AppendLog.instance(self.memtable_wal_path())
+
+    def search_all_segments(self, key):
+        ''' (self, str) -> str
+        Searches all segments on disk for key.
+        '''
+        segments = self.segments[:]
+        while len(segments):
+            segment = segments.pop()
+            segment_path = self.segments_directory + segment
+
+            val = None
+            with open(segment_path, 'r') as s:
+                for line in s:
+                    k, v = line.split(',')
+                    if k == key:
+                        return v.strip()
 
     # Metadata and initialization helpers
     def load_metadata(self):
@@ -183,7 +197,6 @@ class LSMTree():
 
     def restore_memtable(self):
         ''' (self) -> None
-
         Re-populates the memtable from the disk backup.
         '''
         if Path(self.memtable_wal_path()).exists():
@@ -319,16 +332,6 @@ class LSMTree():
         return corrected_names
 
     # Index helpers
-    def set_sparsity_factor(self, factor):
-        ''' (self, int) -> None
-        Sets the sparsity factor for the database. The threshold is divided by this 
-        number to yield the index's sparsity, which represents how many elements per
-        segment will be stored in the index.
-
-        The higher this number, the more records will be stored.
-        '''
-        self.sparsity_factor = factor
-
     def sparsity(self):
         ''' (self) -> int
         Returns the sparsity of the index. This represents the number of records per
@@ -338,7 +341,6 @@ class LSMTree():
 
     def repopulate_index(self):
         '''(self) -> None
-
         Repopulates the index stored in the database by parsing each segment
         on disk.
         '''
