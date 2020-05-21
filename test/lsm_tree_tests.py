@@ -466,6 +466,7 @@ class TestDatabase(unittest.TestCase):
         db.restore_memtable()
         self.assertEqual(db.memtable.contains('sad'), True)
         self.assertEqual(db.memtable.contains('pad'), True)
+        self.assertEqual(db.memtable.total_bytes, 12)
 
     def test_initializing_db_loads_metadata_and_memtable(self):
         '''

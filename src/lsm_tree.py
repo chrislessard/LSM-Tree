@@ -205,8 +205,7 @@ class LSMTree():
                 for line in s:
                     key, value = line.strip().split(',')
                     self.memtable.add(key, value)
-                    # +2 for \n and , added to file at flush time
-                    self.memtable.total_bytes += (len(key) + len(value) + 2)
+                    self.memtable.total_bytes += len(key) + len(value)
 
     # Write helpers
     def flush_memtable_to_disk(self, path):
