@@ -549,6 +549,31 @@ class TestDatabase(unittest.TestCase):
         self.assertTrue(db.index.contains('jkl'))
         self.assertTrue(db.index.contains('vwx'))
 
+    def test_memtable_writes_most_recent_keys(self):
+        '''
+        Tests that the memtable only flushes the most recent values of 
+        keys to disk.
+        '''
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.set_threshold(100)
+
+        db.db_set('abc', '123')
+        db.db_set('abc', 'ABC')
+        db.db_set('def', '345')
+        db.db_set('def', 'DEF')
+        db.db_set('ghi', '567')
+        db.db_set('ghi', 'GHI')
+
+        db.flush_memtable_to_disk(TESTPATH)
+
+        with open(TESTPATH, 'r') as s:
+            lines = s.readlines()
+        
+        self.assertEqual(len(lines), 3)
+        self.assertEqual(lines[0], 'abc,ABC\n')
+        self.assertEqual(lines[1], 'def,DEF\n')
+        self.assertEqual(lines[2], 'ghi,GHI\n')
+
     def test_flush_memtable_stores_segment_in_index(self):
         '''
         Tests that flushing the memtable to disk populates the index and stores
