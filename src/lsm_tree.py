@@ -158,24 +158,6 @@ class LSMTree():
         '''
         self.sparsity_factor = factor
 
-    def set_bloom_filter_num_items(self, num_items):
-        ''' (self, int) -> None
-        Sets the number of expected item for the bloom filter.
-
-        Warning - this operation re-initializes structure.
-        '''
-        self.bf_num_items = num_items
-        self.bloom_filter = BloomFilter(self.bf_num_items, self.bf_false_pos_prob)
-
-    def set_bloom_filter_false_pos_prob(self, probability):
-        ''' (self, int) -> None
-        Sets the desired probability of generating a false positive for the bloom filter.
-
-        Warning - this operation re-initializes the structure.
-        '''
-        self.bf_false_pos_prob = probability
-        self.bloom_filter = BloomFilter(self.bf_num_items, self.bf_false_pos_prob)
-
     ### Helper methods
 
     def memtable_wal(self):
@@ -213,8 +195,10 @@ class LSMTree():
                 metadata = pickle.load(s)
                 self.segments = metadata['segments']
                 self.current_segment = metadata['current_segment']
-
-        # todo load the memtable as well. seperate function.
+                self.bloom_filter = metadata['bloom_filter']
+                self.bf_active = metadata['bf_active']
+                self.bf_num_items = metadata['bf_num_items']
+                self.bf_false_pos_prob = metadata['bf_false_pos']
 
     def save_metadata(self):
         ''' (self) -> None
@@ -222,7 +206,11 @@ class LSMTree():
         '''
         bookkeeping_info = {
             'current_segment': self.current_segment,
-            'segments': self.segments
+            'segments': self.segments,
+            'bf_active': self.bf_active,
+            'bloom_filter': self.bloom_filter,
+            'bf_num_items': self.bf_num_items,
+            'bf_false_pos': self.bf_false_pos_prob
         }
         backup_path = self.segments_directory + 'database_metadata'
 
@@ -395,6 +383,39 @@ class LSMTree():
 
                     bytes += len(line)
                     counter -= 1
+
+    # Bloom filter
+    def activate_bloom_filter(self):
+        ''' (self) -> None
+        Activates the bloom filter.
+        '''
+        self.bf_active = True
+
+    def deactivate_bloom_filter(self):
+        ''' (self) -> None
+        Deactivates the bloom filter.
+        '''
+        self.bf_active = False
+
+    def set_bloom_filter_num_items(self, num_items):
+        ''' (self, int) -> None
+        Sets the number of expected item for the bloom filter.
+
+        Warning - this operation re-initializes structure.
+        '''
+        self.bf_num_items = num_items
+        self.bloom_filter = BloomFilter(
+            self.bf_num_items, self.bf_false_pos_prob)
+
+    def set_bloom_filter_false_pos_prob(self, probability):
+        ''' (self, int) -> None
+        Sets the desired probability of generating a false positive for the bloom filter.
+
+        Warning - this operation re-initializes the structure.
+        '''
+        self.bf_false_pos_prob = probability
+        self.bloom_filter = BloomFilter(
+            self.bf_num_items, self.bf_false_pos_prob)
 
     # Path generators
     def current_segment_path(self):

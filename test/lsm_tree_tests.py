@@ -415,6 +415,9 @@ class TestDatabase(unittest.TestCase):
 
         db.db_set('chris', 'lessard')
         db.db_set('daniel', 'lessard')
+        db.bf_active = True
+        db.bf_false_pos_prob = 0.5
+        db.bf_num_items = 100
         db.save_metadata()
 
         with open(db.segments_directory + 'database_metadata', 'rb') as s:
@@ -422,6 +425,9 @@ class TestDatabase(unittest.TestCase):
         
         self.assertEqual(metadata['current_segment'], TEST_FILENAME)
         self.assertEqual(metadata['segments'], segments)
+        self.assertTrue(metadata['bf_active'])
+        self.assertEqual(metadata['bf_false_pos'], 0.5)
+        self.assertEqual(metadata['bf_num_items'], 100)
 
     def test_load_metadata_segments_at_init(self):
         '''
@@ -434,6 +440,9 @@ class TestDatabase(unittest.TestCase):
 
         db.db_set('chris', 'lessard')
         db.db_set('daniel', 'lessard')
+        db.bf_active = True
+        db.bf_false_pos_prob = 0.5
+        db.bf_num_items = 100
         db.save_metadata() # pickle will be saved
         del db
 
@@ -442,6 +451,9 @@ class TestDatabase(unittest.TestCase):
 
         self.assertEqual(db.segments, segments)
         self.assertEqual(db.current_segment, segments[-1])
+        self.assertTrue(db.bf_active)
+        self.assertEqual(db.bf_false_pos_prob, 0.5)
+        self.assertEqual(db.bf_num_items, 100)
 
     def test_load_memtable_from_wal(self):
         '''
