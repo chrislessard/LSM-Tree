@@ -7,7 +7,7 @@ class BloomFilter:
     # https://en.wikipedia.org/wiki/Bloom_filter#Probability_of_false_positives.
     # A condensed explanation can be found here:
     # https://stackoverflow.com/questions/658439/how-many-hash-functions-does-my-bloom-filter-need
-    
+
     def __init__(self, num_items, false_positive_prob): 
         ''' (self, int, float) -> BloomFilter
 
@@ -33,11 +33,10 @@ class BloomFilter:
         '''
         digests = [] 
         for seed in range(self.num_hash_fns):
-            # each seeds creates a different digest.
+            # each seed creates a different digest.
             digest = hash(item, seed) % self.bit_array_size 
             digests.append(digest) 
   
-            # set the bit True in bit_array 
             self.bit_array[digest] = True
 
     def check(self, item): 

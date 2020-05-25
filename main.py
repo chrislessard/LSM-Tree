@@ -9,26 +9,32 @@ def main():
     Run the LSMTree interface.
     '''
     usage_msg = [
-        'Commands: ',
-        'store {key} {data}',
-        'get {key}',
-        'compact_segments',
-        'set_threshold {number of bytes}',
-        'set_sparsity {value}',
-        'activate_bloomfilter',
-        'deactivate_bloomfilter',
-        'set_bf_num_items {items}',
-        'set_bf_false_pos_prob {probability}',
-        'help',
-        'exit'
+        ['Commands: ', 'Explanation'],
+        ['store {key} {data}', 'Store the key value vair in the DB'],
+        ['get {key}', 'Retrieve the value for key. Returns None if it doesnt exist'],
+        ['compact_segments', 'Run the compaction algorithm'],
+        ['set_threshold {number of bytes}', 'Set the threshold for the size of the memtable'],
+        ['set_sparsity {value}', 'Set the sparsity factor for the DBs index'],
+        ['activate_bloomfilter', 'Activate the Bloom Filter'],
+        ['deactivate_bloomfilter', 'Deactivate the Bloom Filter'],
+        ['set_bf_num_items {items}', 'Set the number of expected items for the Bloom Filter. Warning: this overrides it.'],
+        ['set_bf_false_pos_prob {probability}', 'Set the desired false positive probability for the Bloom Filter. Warning: this overrides it.'],
+        ['help', 'Print the usage message'],
+        ['exit', 'Quit the program. Your instance will be saved to disk.']
     ]
 
     db = LSMTree(SEGMENT_BASENAME, SEGMENTS_DIRECTORY, WAL_BASENAME)
 
-    print('\n\t'.join(usage_msg))
+    for row in usage_msg:
+        print("\t{: <40}{: <10}".format(*row))
 
     while True:
-        print('\nEnter a command below. Type "help" to see a list of commands.')
+        if db.bf_active:
+            print("\nThe DB's BloomFilter is on.")
+        else:
+            print("\nThe DB's BloomFilter is off.")
+
+        print('Enter a command below. Type "help" to see a list of commands.')
         cmd = input('$ ').lower().split(' ')
 
         if cmd[0] == 'store':
@@ -73,7 +79,8 @@ def main():
                 print(
                     'Set the BloomFilters desired probability of a false positive to', float(cmd[1]))
         elif cmd[0] == 'help':
-            print('\n\t'.join(usage_msg))
+            for row in usage_msg:
+                print("\t{: <40} {: <10}".format(*row))
         elif cmd[0] == 'exit':
             db.save_metadata()
             break
