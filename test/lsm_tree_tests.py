@@ -92,8 +92,7 @@ class TestDatabase(unittest.TestCase):
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         
         # The singleton instance will persist throughout the suite.
-        # This test tests its functionality directory, so we need to wipe
-        # its state.
+        # We need to clear the instance explicitely in order to make sure that values from old tests don't persist.
         db.memtable_wal().clear()
         open(TEST_BASEPATH + BKUP_NAME, 'w').close()
 
@@ -460,18 +459,14 @@ class TestDatabase(unittest.TestCase):
         Tests that the memtable can be restored from the write-ahead-log.
         '''
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+
         # The singleton instance will persist throughout the suite.
-        # This test tests its functionality directory, so we need to wipe
-        # its state.
+        # We need to clear the instance explicitely in order to make sure that values from old tests don't persist.
         db.memtable_wal().clear()
         db.db_set('sad', 'mad')
         db.db_set('pad', 'tad')
 
         del db
-
-        # This code is run by default upon db instantiation, 
-        # so we clear the memtable here to make sure that the method works
-        # individually
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.memtable = RedBlackTree()
 
@@ -479,6 +474,35 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.memtable.contains('sad'), True)
         self.assertEqual(db.memtable.contains('pad'), True)
         self.assertEqual(db.memtable.total_bytes, 12)
+
+    def test_load_memtable_from_wal_keeps_update(self):
+        '''
+        Tests that updates persist when reloading the memtable 
+        from the write-ahead-log.
+        '''
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+
+        # The singleton instance will persist throughout the suite.
+        # We need to clear the instance explicitely in order to make sure that values from old tests don't persist.
+        db.memtable_wal().clear()
+        db.db_set('chris', 'lessard')
+        db.db_set('chris', 'hemsworth')
+
+        with open(db.memtable_wal_path(), 'r') as s:
+            lines = s.readlines()
+        
+        self.assertEqual(len(lines), 2)
+        self.assertEqual(lines[0], 'chris,lessard\n')
+        self.assertEqual(lines[1], 'chris,hemsworth\n')
+
+        del db
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.memtable = RedBlackTree()
+
+        db.restore_memtable()
+        self.assertTrue(db.memtable.contains('chris'), True)
+        self.assertEqual(db.db_get('chris'), 'hemsworth')
+
 
     def test_initializing_db_loads_metadata_and_memtable(self):
         '''

@@ -45,14 +45,19 @@ class LSMTree():
         ''' (self, str, str) -> None
         Stores a new key value pair in the DB
         '''
+        log = self.as_log_entry(key, value)
+
         # Check if we can save effort by updating the memtable in place
         node = self.memtable.find_node(key)
         if node:
+            # Write to memtable write ahead log in case of crash
+            self.memtable_wal().write(log)
+
+            # Write value
             node.value = value
             return
 
-        # A new key means the size of the memtable will have increased,
-        # so we must compare it to the threshold
+        # Check if new segment needed
         additional_size = len(key) + len(value)
         if self.memtable.total_bytes + additional_size > self.threshold:
             self.flush_memtable_to_disk(self.current_segment_path())
@@ -65,15 +70,14 @@ class LSMTree():
             self.current_segment = new_seg_name
             self.memtable.total_bytes = 0
 
-        # Write to memtable write ahead log
-        log = self.as_log_entry(key, value)
+        # Write to memtable write ahead log in case of crash
         self.memtable_wal().write(log)
 
         # Write to memtable
         self.memtable.add(key, value)
         self.memtable.total_bytes += additional_size
 
-        # Add to bloom filter
+        # Add to bloom filters
         if self.bf_active:
             self.bloom_filter.add(key)
 
