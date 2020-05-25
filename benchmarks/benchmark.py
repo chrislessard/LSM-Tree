@@ -7,27 +7,13 @@ from src import lsm_tree as s
 
 path = file_directory + '/benchmark_segments/'
 
+# Helpers
 def random_string(stringLength):
     letters = string.ascii_letters
     return ''.join(random.choice(letters) for i in range(stringLength))
 
-def benchmark_store(db):
-    for i in range(100000):
-        db.db_set('chris', 'lessard')
-
-def benchmark_get(db):
-    db.db_get('daniel')
-
-def benchmark_random_writes(db, pairs):
-    for key, value in pairs:
-        db.db_set(key, value)
-
-def benchmark_random_reads(db, strs):
-    for key in strs:
-        db.db_get(key)
-
 setup = """
-from __main__ import s, benchmark_store, benchmark_get, benchmark_random_writes, path
+from __main__ import s, path
 db = s.LSMTree('test_file-1', path, 'bkup')
 """
 
@@ -38,29 +24,34 @@ db = s.LSMTree('test_file-1', path, 'bkup')
 print("Write benchmarks")
 
 # 01. Write the same key value pair to the DB 100k times
-benchmark_store_str = """benchmark_store(db)"""
-print('Same key 100k times:', timeit.timeit(benchmark_store_str, setup=setup, number=1))
+benchmark_execute = """
+for i in range(100000):
+    db.db_set('chris', 'lessard')
+"""
+print('Same key 100k times:', timeit.timeit(
+    benchmark_execute, setup=setup, number=1))
 
 # 02. Write 100k random key value pairs
-random_writes_setup = setup + """
+benchmark_setup = setup + """
 from __main__ import random_string
 import string, random
 num_writes = 100000
 strings = [random_string(10) for i in range(50)]
 pairs = [(random.choice(strings), random.choice(strings)) for i in range(num_writes)]
 """
-benchmark_random_writes_str = """
-benchmark_random_writes(db, pairs)
+benchmark_execute = """
+for key, value in pairs:
+    db.db_set(key, value)
 """
 print('Diff keys 100k times', timeit.timeit(
-    benchmark_random_writes_str, setup=random_writes_setup, number=1))
+    benchmark_execute, setup=benchmark_setup, number=1))
 
 # 03. Write 100k random key value pairs, with the bloom filter turned on
-random_writes_setup = setup + """
+benchmark_setup = setup + """
 from __main__ import random_string
 import string, random
 
-db.bloom_filter_active = True
+db.bf_active = True
 db.set_bloom_filter_num_items(100000)
 db.bf_false_pos_prob = 0.2
 
@@ -68,12 +59,12 @@ num_writes = 100000
 strings = [random_string(10) for i in range(50)]
 pairs = [(random.choice(strings), random.choice(strings)) for i in range(num_writes)]
 """
-benchmark_random_writes_str = """
-benchmark_random_writes(db, pairs)
+c = """
+for key, value in pairs:
+    db.db_set(key, value)
 """
 print('Diff keys 100k times - bloom filter on', timeit.timeit(
-    benchmark_random_writes_str, setup=random_writes_setup, number=1))
-
+    benchmark_execute, setup=benchmark_setup, number=1))
 
 ##
 ## READ BENCHMARKS
@@ -83,15 +74,18 @@ print()
 print("Read benchmarks")
 
 # 01. Get a single key
-benchmark_get_str = """
+benchmark_setup = setup + """
 db.db_set('daniel', 'lessard')
-benchmark_get(db)
 """
-print('Get Single key:', timeit.timeit(benchmark_get_str, setup=setup, number=1))
+benchmark_execute = """
+db.db_get('daniel')
+"""
+print('Get Single key:', timeit.timeit(
+    benchmark_execute, setup=benchmark_setup, number=1))
 
 # 02. Get 100k keys
-random_reads_setup = setup + """
-from __main__ import random_string, benchmark_random_reads
+benchmark_setup = setup + """
+from __main__ import random_string
 import string, random
 num_writes = 100000
 strings = [random_string(10) for i in range(50)]
@@ -100,17 +94,19 @@ for k, v in pairs:
     db.db_set(k, v)
 strs = [random.choice(strings) for i in range(num_writes)]
 """
-benchmark_random_reads_str = """
-benchmark_random_reads(db, strs)
+benchmark_execute = """
+for key in strs:
+    db.db_get(key)
 """
-print('100k random reads', timeit.timeit(benchmark_random_writes_str, setup=random_reads_setup, number=1))
+print('100k random reads', timeit.timeit(
+    benchmark_execute, setup=benchmark_setup, number=1))
 
 # 03. Get 100k keys, bloom filter on
-random_reads_setup_with_bloomfilter = setup + """
-from __main__ import random_string, benchmark_random_reads
+benchmark_setup = setup + """
+from __main__ import random_string
 import string, random
 
-db.bloom_filter_active = True
+db.bf_active = True
 db.set_bloom_filter_num_items(100000)
 db.bf_false_pos_prob = 0.2
 
@@ -122,18 +118,18 @@ for k, v in write_pairs:
 
 strs = [random.choice(strings) for i in range(num_writes)]
 """
-benchmark_random_reads_with_bloomfilter_str = """
-benchmark_random_reads(db, strs)
+benchmark_execute = """
+for key in strs:
+    db.db_get(key)
 """
 print('100k random reads, bloom filter on', timeit.timeit(
-    benchmark_random_reads_with_bloomfilter_str, 
-    setup=random_reads_setup_with_bloomfilter, 
-    number=1)
-    )
+    benchmark_execute, 
+    setup=benchmark_setup, 
+    number=1))
 
 # 04. Get 100k keys, half aren't present, bloom filter off
-random_reads_setup_with_bloomfilter = setup + """
-from __main__ import random_string, benchmark_random_reads
+benchmark_setup = setup + """
+from __main__ import random_string
 import string, random
 
 num_writes = 100000
@@ -148,21 +144,22 @@ absent_strs =  [random_string(5) for i in range(50)]
 strs = [random.choice(present_strs) for i in range(num_writes // 2)]
 strs += [random.choice(absent_strs) for i in range(num_writes // 2)]
 """
-benchmark_random_reads_with_bloomfilter_str = """
-benchmark_random_reads(db, strs)
+benchmark_execute = """
+for key in strs:
+    db.db_get(key)
 """
 print('100k random reads, half missing, bloom filter off', timeit.timeit(
-    benchmark_random_reads_with_bloomfilter_str,
-    setup=random_reads_setup_with_bloomfilter,
+    benchmark_execute,
+    setup=benchmark_setup,
     number=1)
 )
 
 # 05. Get 100k keys, half aren't present, bloom filter on
-random_reads_setup_with_bloomfilter = setup + """
-from __main__ import random_string, benchmark_random_reads
+benchmark_setup = setup + """
+from __main__ import random_string
 import string, random
 
-db.bloom_filter_active = True
+db.bf_active = True
 db.set_bloom_filter_num_items(100000)
 db.bf_false_pos_prob = 0.2
 
@@ -175,19 +172,79 @@ for k, v in write_pairs:
 # absent strings have shorter length 
 absent_strs =  [random_string(5) for i in range(50)]
 
-strs = [random.choice(present_strs) for i in range(num_writes // 2)]
-strs += [random.choice(absent_strs) for i in range(num_writes // 2)]
+present = [random.choice(present_strs) for i in range(num_writes // 2)]
+absent = [random.choice(absent_strs) for i in range(num_writes // 2)]
+strs = present + absent
 """
-benchmark_random_reads_with_bloomfilter_str = """
-benchmark_random_reads(db, strs)
+benchmark_execute = """
+for key in strs:
+    db.db_get(key)
 """
 print('100k random reads, half missing, bloom filter on', timeit.timeit(
-    benchmark_random_reads_with_bloomfilter_str,
-    setup=random_reads_setup_with_bloomfilter,
+    benchmark_execute,
+    setup=benchmark_setup,
     number=1)
 )
 
+# 06. Lots of misses, bloom filter off
+benchmark_setup = setup + """
+from __main__ import random_string
+import string, random
 
+num_writes = 1000000
+present_strs = [random_string(5) for i in range(50)]
+write_pairs = [(random.choice(present_strs), random.choice(present_strs)) for i in range(num_writes)]
+for k, v in write_pairs:
+    db.db_set(k, v)
+
+# absent strings have shorter length 
+absent_strs =  [random_string(5) for i in range(50)]
+
+l1 = [random.choice(present_strs) for i in range(num_writes//2)]
+l2 = [random.choice(absent_strs) for i in range(num_writes//2)]
+strs = l1 + l2
+"""
+benchmark_execute = """
+for key in strs:
+    db.db_get(key)
+"""
+print('100k misses', timeit.timeit(
+    benchmark_execute,
+    setup=benchmark_setup,
+    number=1)
+)
+
+# 06. Lots of misses, bloom filter on
+benchmark_setup = setup + """
+from __main__ import random_string
+import string, random
+
+num_writes = 1000000
+db.bf_active = True
+db.set_bloom_filter_num_items(num_writes)
+db.bf_false_pos_prob = 0.1
+
+present_strs = [random_string(5) for i in range(50)]
+write_pairs = [(random.choice(present_strs), random.choice(present_strs)) for i in range(num_writes)]
+for k, v in write_pairs:
+    db.db_set(k, v)
+
+# absent strings have shorter length 
+absent_strs = [random_string(5) for i in range(50)]
+
+l1 = [random.choice(present_strs) for i in range(num_writes//2)]
+l2 = [random.choice(absent_strs) for i in range(num_writes//2)]
+strs = l1 + l2
+"""
+benchmark_execute = """
+for key in strs:
+    db.db_get(key)
+"""
+print('100k misses, bloom filter on', timeit.timeit(
+    benchmark_execute,
+    setup=benchmark_setup,
+    number=1)
+)
 
 # Cleanup
 for filename in os.listdir(path):
