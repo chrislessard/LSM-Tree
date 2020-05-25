@@ -15,6 +15,10 @@ def main():
         'compact_segments',
         'set_threshold {number of bytes}',
         'set_sparsity {value}',
+        'activate_bloomfilter',
+        'deactivate_bloomfilter',
+        'set_bf_num_items {items}',
+        'set_bf_false_pos_prob {probability}',
         'help',
         'exit'
     ]
@@ -47,6 +51,27 @@ def main():
             sparsity = int(cmd[1])
             db.set_sparsity_factor(sparsity)
             print('\nSet new sparsity factor.\n')
+        elif cmd[0] == 'activate_bloomfilter':
+            db.activate_bloom_filter()
+            print('BloomFilter activated')
+        elif cmd[0] == 'deactivate_bloomfilter':
+            db.deactivate_bloom_filter()
+            print('BloomFilter deactivated')
+        elif cmd[0] == 'set_bf_num_items':
+            arg = int(cmd[1])
+            if arg <= 0:
+                print("Invalid option, plase choose a value greater than 0")
+            else:
+                db.set_bloom_filter_num_items(arg)
+                print('Set the BloomFilters expected num items to', arg)
+        elif cmd[0] == 'set_bf_false_pos_prob':
+            arg = float(cmd[1])
+            if arg < 0 or arg > 1:
+                print('Invalid option. Please choose a probability between 0 and 1.')
+            else:
+                db.set_bloom_filter_false_pos_prob()
+                print(
+                    'Set the BloomFilters desired probability of a false positive to', float(cmd[1]))
         elif cmd[0] == 'help':
             print('\n\t'.join(usage_msg))
         elif cmd[0] == 'exit':
