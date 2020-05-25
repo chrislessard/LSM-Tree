@@ -2,6 +2,7 @@ from pathlib import Path
 from os import remove as remove_file, rename as rename_file
 from .red_black_tree import RedBlackTree
 from .append_log import AppendLog
+from .bloom_filter import BloomFilter
 import pickle
 
 class LSMTree():
@@ -25,6 +26,12 @@ class LSMTree():
         # Index
         self.index = RedBlackTree()
         self.sparsity_factor = 100
+
+        # Bloom Filter
+        self.bf_num_items = 1000000
+        self.bf_false_pos_prob = 0.2
+        self.bf_active = False
+        self.bloom_filter = BloomFilter(self.bf_num_items, self.bf_false_pos_prob)
 
         # Create the segments directory
         if not (Path(segments_directory).exists() and Path(segments_directory).is_dir):
@@ -66,10 +73,18 @@ class LSMTree():
         self.memtable.add(key, value)
         self.memtable.total_bytes += additional_size
 
+        # Add to bloom filter
+        if self.bf_active:
+            self.bloom_filter.add(key)
+
     def db_get(self, key):
         ''' (self, str) -> None
         Retrieve the value associated with key in the db
         '''
+        # Check the bloom filter
+        if self.bf_active and not self.bloom_filter.check(key):
+            return None 
+
         # Attempts to find the key in the memtable first
         memtable_result = self.memtable.find_node(key)
         if memtable_result:
@@ -142,6 +157,24 @@ class LSMTree():
         The higher this number, the more records will be stored.
         '''
         self.sparsity_factor = factor
+
+    def set_bloom_filter_num_items(self, num_items):
+        ''' (self, int) -> None
+        Sets the number of expected item for the bloom filter.
+
+        Warning - this operation re-initializes structure.
+        '''
+        self.bf_num_items = num_items
+        self.bloom_filter = BloomFilter(self.bf_num_items, self.bf_false_pos_prob)
+
+    def set_bloom_filter_false_pos_prob(self, probability):
+        ''' (self, int) -> None
+        Sets the desired probability of generating a false positive for the bloom filter.
+
+        Warning - this operation re-initializes the structure.
+        '''
+        self.bf_false_pos_prob = probability
+        self.bloom_filter = BloomFilter(self.bf_num_items, self.bf_false_pos_prob)
 
     ### Helper methods
 
@@ -243,7 +276,7 @@ class LSMTree():
     def merge_into_first_segment(self, segment1, segment2):
         ''' (self, str, str) -> str
         Concatenates the contents of the files represented byt segment1 and
-        segment 2, erases the second segment file and returns the name of the
+        segment2, erases the second segment file and returns the name of the
         first segment. 
         '''
         path1 = self.segments_directory + segment1
