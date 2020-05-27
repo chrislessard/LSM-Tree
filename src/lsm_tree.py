@@ -30,7 +30,6 @@ class LSMTree():
         # Bloom Filter
         self.bf_num_items = 1000000
         self.bf_false_pos_prob = 0.2
-        self.bf_active = False
         self.bloom_filter = BloomFilter(self.bf_num_items, self.bf_false_pos_prob)
 
         # Create the segments directory
@@ -82,15 +81,14 @@ class LSMTree():
         self.memtable.total_bytes += additional_size
 
         # Add to bloom filters
-        if self.bf_active:
-            self.bloom_filter.add(key)
+        self.bloom_filter.add(key)
 
     def db_get(self, key):
         ''' (self, str) -> None
         Retrieve the value associated with key in the db
         '''
         # Check the bloom filter
-        if self.bf_active and not self.bloom_filter.check(key):
+        if not self.bloom_filter.check(key):
             return None 
 
         # Attempts to find the key in the memtable first
@@ -204,7 +202,6 @@ class LSMTree():
                 self.segments = metadata['segments']
                 self.current_segment = metadata['current_segment']
                 self.bloom_filter = metadata['bloom_filter']
-                self.bf_active = metadata['bf_active']
                 self.bf_num_items = metadata['bf_num_items']
                 self.bf_false_pos_prob = metadata['bf_false_pos']
 
@@ -215,7 +212,6 @@ class LSMTree():
         bookkeeping_info = {
             'current_segment': self.current_segment,
             'segments': self.segments,
-            'bf_active': self.bf_active,
             'bloom_filter': self.bloom_filter,
             'bf_num_items': self.bf_num_items,
             'bf_false_pos': self.bf_false_pos_prob
@@ -445,17 +441,6 @@ class LSMTree():
                     counter -= 1
 
     # Bloom filter
-    def activate_bloom_filter(self):
-        ''' (self) -> None
-        Activates the bloom filter.
-        '''
-        self.bf_active = True
-
-    def deactivate_bloom_filter(self):
-        ''' (self) -> None
-        Deactivates the bloom filter.
-        '''
-        self.bf_active = False
 
     def set_bloom_filter_num_items(self, num_items):
         ''' (self, int) -> None

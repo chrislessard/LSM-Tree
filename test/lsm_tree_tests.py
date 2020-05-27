@@ -271,7 +271,6 @@ class TestDatabase(unittest.TestCase):
 
         db.db_set('chris', 'lessard')
         db.db_set('daniel', 'lessard')
-        db.bf_active = True
         db.bf_false_pos_prob = 0.5
         db.bf_num_items = 100
         db.save_metadata()
@@ -281,7 +280,6 @@ class TestDatabase(unittest.TestCase):
         
         self.assertEqual(metadata['current_segment'], TEST_FILENAME)
         self.assertEqual(metadata['segments'], segments)
-        self.assertTrue(metadata['bf_active'])
         self.assertEqual(metadata['bf_false_pos'], 0.5)
         self.assertEqual(metadata['bf_num_items'], 100)
 
@@ -296,7 +294,6 @@ class TestDatabase(unittest.TestCase):
 
         db.db_set('chris', 'lessard')
         db.db_set('daniel', 'lessard')
-        db.bf_active = True
         db.bf_false_pos_prob = 0.5
         db.bf_num_items = 100
         db.save_metadata() # pickle will be saved
@@ -307,7 +304,6 @@ class TestDatabase(unittest.TestCase):
 
         self.assertEqual(db.segments, segments)
         self.assertEqual(db.current_segment, segments[-1])
-        self.assertTrue(db.bf_active)
         self.assertEqual(db.bf_false_pos_prob, 0.5)
         self.assertEqual(db.bf_num_items, 100)
 
@@ -615,6 +611,9 @@ class TestDatabase(unittest.TestCase):
 
     def test_db_get_uses_index(self):
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        
+        # Simulate real writes
+        db.bloom_filter.add('chris')
         with open(TEST_BASEPATH + 'segment2', 'w') as s:
             s.write('chris,lessard\n')
 
@@ -624,6 +623,12 @@ class TestDatabase(unittest.TestCase):
 
     def test_db_get_uses_index_with_floor(self):
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+
+        # Simulate real writes
+        db.bloom_filter.add('chris')
+        db.bloom_filter.add('christian')
+        db.bloom_filter.add('daniel')
+
         with open(TEST_BASEPATH + 'segment2', 'w') as s:
             s.write('chris,lessard\n')
             s.write('christian,dior\n')
@@ -1012,7 +1017,6 @@ class TestDatabase(unittest.TestCase):
         # Mock the database instance
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.segments = files[:]
-        db.activate_bloom_filter()
 
         for line in lines:
             key, val = line.split(',')
@@ -1044,7 +1048,6 @@ class TestDatabase(unittest.TestCase):
         # Mock the database instance
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.segments = files[:]
-        db.activate_bloom_filter()
 
         for line in lines:
             key, val = line.split(',')
@@ -1067,7 +1070,6 @@ class TestDatabase(unittest.TestCase):
         Tests that crossing the threshold with db set calls the compaction algorithm
         '''
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-        db.activate_bloom_filter()
 
         db.set_threshold(20)
 

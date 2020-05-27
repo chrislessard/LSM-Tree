@@ -15,8 +15,6 @@ def main():
         ['compact_segments', 'Run the compaction algorithm'],
         ['set_threshold {number of bytes}', 'Set the threshold for the size of the memtable'],
         ['set_sparsity {value}', 'Set the sparsity factor for the DBs index'],
-        ['activate_bloomfilter', 'Activate the Bloom Filter'],
-        ['deactivate_bloomfilter', 'Deactivate the Bloom Filter'],
         ['set_bf_num_items {items}', 'Set the number of expected items for the Bloom Filter. Warning: this overrides it.'],
         ['set_bf_false_pos_prob {probability}', 'Set the desired false positive probability for the Bloom Filter. Warning: this overrides it.'],
         ['help', 'Print the usage message'],
@@ -29,11 +27,6 @@ def main():
         print("\t{: <40}{: <10}".format(*row))
 
     while True:
-        if db.bf_active:
-            print("\nThe DB's BloomFilter is on.")
-        else:
-            print("\nThe DB's BloomFilter is off.")
-
         print('Enter a command below. Type "help" to see a list of commands.')
         cmd = input('$ ').lower().split(' ')
 
@@ -57,12 +50,6 @@ def main():
             sparsity = int(cmd[1])
             db.set_sparsity_factor(sparsity)
             print('\nSet new sparsity factor.\n')
-        elif cmd[0] == 'activate_bloomfilter':
-            db.activate_bloom_filter()
-            print('BloomFilter activated')
-        elif cmd[0] == 'deactivate_bloomfilter':
-            db.deactivate_bloom_filter()
-            print('BloomFilter deactivated')
         elif cmd[0] == 'set_bf_num_items':
             arg = int(cmd[1])
             if arg <= 0:

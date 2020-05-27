@@ -270,7 +270,6 @@ print("\nThe same benchmarks, with the Bloom Filter activated")
 #
 #
 benchmark_setup = setup + """
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(1)
 db.set_bloom_filter_false_pos_prob(0.2)
 """
@@ -288,7 +287,6 @@ print(
 #
 #
 benchmark_setup= setup + """
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(10000)
 db.set_bloom_filter_false_pos_prob(0.2)
 """
@@ -313,7 +311,6 @@ benchmark_setup = setup + """
 db.set_threshold(100000)
 num_writes = 100000
 
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(num_writes)
 db.set_bloom_filter_false_pos_prob(0.2)
 
@@ -338,7 +335,6 @@ db.set_threshold(1000000)
 num_writes = 100000
 
 
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(num_writes)
 db.set_bloom_filter_false_pos_prob(0.2)
 
@@ -363,7 +359,6 @@ benchmark_setup = setup + """
 db.set_threshold(2000000)
 num_writes = 100000
 
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(num_writes)
 db.set_bloom_filter_false_pos_prob(0.2)
 
@@ -387,7 +382,6 @@ benchmark_setup = setup + """
 db.set_threshold(4000000)
 num_writes = 100000
 
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(num_writes)
 db.set_bloom_filter_false_pos_prob(0.2)
 
@@ -413,7 +407,6 @@ benchmark_setup = setup + """
 db.set_threshold(1000000)
 num_writes = 1000000
 
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(num_writes)
 db.set_bloom_filter_false_pos_prob(0.2)
 
@@ -438,7 +431,6 @@ benchmark_setup = setup + """
 db.set_threshold(6000000)
 num_writes = 1000000
 
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(num_writes)
 db.set_bloom_filter_false_pos_prob(0.2)
 
@@ -465,7 +457,6 @@ benchmark_setup = setup + """
 db.set_threshold(100000)
 num_writes = 100000
 
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(num_writes)
 db.set_bloom_filter_false_pos_prob(0.2)
 
@@ -490,7 +481,6 @@ benchmark_setup = setup + """
 db.set_threshold(1000000)
 num_writes = 100000
 
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(num_writes)
 db.set_bloom_filter_false_pos_prob(0.2)
 
@@ -515,7 +505,6 @@ benchmark_setup = setup + """
 db.set_threshold(2000000)
 num_writes = 100000
 
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(num_writes)
 db.set_bloom_filter_false_pos_prob(0.2)
 
@@ -540,7 +529,6 @@ benchmark_setup = setup + """
 db.set_threshold(4000000)
 num_writes = 100000
 
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(num_writes)
 db.set_bloom_filter_false_pos_prob(0.2)
 

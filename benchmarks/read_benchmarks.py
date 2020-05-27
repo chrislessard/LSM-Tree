@@ -130,7 +130,6 @@ print("\nThe same benchmarks with the Bloom Filter turned on:")
 #
 #
 benchmark_setup = setup + """
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(1)
 db.set_bloom_filter_false_pos_prob(0.2)
 
@@ -153,7 +152,6 @@ from __main__ import random_string
 import string, random
 num_writes = 100000
 
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(num_writes)
 db.set_bloom_filter_false_pos_prob(0.2)
 
@@ -181,7 +179,6 @@ import string, random
 
 num_writes = 100000
 
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(num_writes)
 db.set_bloom_filter_false_pos_prob(0.2)
 
@@ -217,7 +214,6 @@ import string, random
 num_writes = 10000
 db.set_threshold(num_writes // 2)
 
-db.activate_bloom_filter()
 db.set_bloom_filter_num_items(num_writes)
 db.set_bloom_filter_false_pos_prob(0.2)
 
