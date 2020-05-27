@@ -60,7 +60,7 @@ class LSMTree():
         additional_size = len(key) + len(value)
         if self.memtable.total_bytes + additional_size > self.threshold:
             # Run the compaction algorithm
-            self.new_compaction()
+            self.compact()
 
             # Flush memtable to disk
             self.flush_memtable_to_disk(self.current_segment_path())
@@ -110,42 +110,6 @@ class LSMTree():
                         return v.strip()
 
         return self.search_all_segments(key)
-
-    def compact(self):
-        ''' (self) -> None
-        Performs the compaction algorithm on the database segments.
-        '''
-        for segment in self.segments:
-            self.compact_segment(segment)
-
-        # Reduce segments
-        fully_compacted_segments = []
-        segments = self.segments[:]
-
-        while len(segments) > 1:
-            seg1, seg2 = segments.pop(0), segments.pop(0)
-
-            seg1_size = self.get_file_size(self.segments_directory + seg1)
-            seg2_size = self.get_file_size(self.segments_directory + seg2)
-            total = seg1_size + seg2_size
-
-            if total > self.threshold:
-                # seg1 can no longer be compacted. seg2 can be compacted with
-                # other remaining segments
-                fully_compacted_segments.append(seg1)
-                segments = [seg2] + segments
-            else:
-                # merge the two segments, conserving the name of the seg1 one
-                merged_segment = self.merge_into_first_segment(seg1, seg2)
-                segments = [merged_segment] + segments
-
-        result = fully_compacted_segments + segments
-
-        # the leftover segments wont be ordered properly by name
-        self.segments = self.rename_segment_files(result)
-
-        # Repopulate the index
-        self.repopulate_index()
 
     def set_threshold(self, threshold):
         ''' (self, int) -> None
@@ -275,9 +239,9 @@ class LSMTree():
 
         return '-'.join([name, new_number])
 
-    # New compaction helpers
+    # Compact and merge
 
-    def new_compaction(self):
+    def compact(self):
         ''' (self) -> None
         Reads the keys from the memtable, determines which ones
         having pre-existing records on disk and reclaims disk space accordingly.
@@ -326,8 +290,7 @@ class LSMTree():
         remove_file(segment_path)
         rename_file(temp_path, segment_path)
 
-    # Compaction and merge helpers
-    def merge_into_first_segment(self, segment1, segment2):
+    def merge(self, segment1, segment2):
         ''' (self, str, str) -> str
         Concatenates the contents of the files represented byt segment1 and
         segment2, erases the second segment file and returns the name of the
@@ -363,51 +326,6 @@ class LSMTree():
 
         return segment1
 
-    def compact_segment(self, segment_name):
-        ''' (self, str) -> None
-        Compacts a single segment named segment_name.
-        '''
-        keys = {}
-        with open(self.segments_directory + segment_name, 'r') as s:
-            for line in s:
-                k, v = line.split(',')
-                keys[k] = v
-
-        with open(self.segments_directory + segment_name, 'w') as s:
-            for key, val in keys.items():
-                log = self.as_log_entry(key, val.strip())
-                s.write(log)
-
-    def rename_segments(self, seg_list):
-        ''' (self, [str]) -> [str]
-        Renames the segments in self.segments to make sure that their 
-        suffixes are in correct ascending order.
-        '''
-        result = []
-
-        for i in range(len(seg_list)):
-            name = seg_list[i]
-            name_decomp = name.split('-')
-            name_decomp[-1] = str(i + 1)
-            result.append('-'.join(name_decomp))
-
-        return result
-
-    def rename_segment_files(self, segments):
-        ''' (self) -> [str]
-        Renames the segment files, represented in memory by the values in 
-        segments, on disk to make sure that their suffixes are in proper 
-        ascending order.
-        '''
-        corrected_names = self.rename_segments(segments)
-
-        for idx, segment in enumerate(segments):
-            old_path = self.segments_directory + segment
-            new_path = self.segments_directory + corrected_names[idx]
-            rename_file(old_path, new_path)
-
-        return corrected_names
-
     def get_file_size(self, path):
         return Path(path).stat().st_size
 
@@ -441,7 +359,6 @@ class LSMTree():
                     counter -= 1
 
     # Bloom filter
-
     def set_bloom_filter_num_items(self, num_items):
         ''' (self, int) -> None
         Sets the number of expected item for the bloom filter.

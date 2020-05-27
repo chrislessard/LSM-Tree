@@ -12,7 +12,6 @@ def main():
         ['Commands: ', 'Explanation'],
         ['store {key} {data}', 'Store the key value vair in the DB'],
         ['get {key}', 'Retrieve the value for key. Returns None if it doesnt exist'],
-        ['compact_segments', 'Run the compaction algorithm'],
         ['set_threshold {number of bytes}', 'Set the threshold for the size of the memtable'],
         ['set_sparsity {value}', 'Set the sparsity factor for the DBs index'],
         ['set_bf_num_items {items}', 'Set the number of expected items for the Bloom Filter. Warning: this overrides it.'],
@@ -27,7 +26,7 @@ def main():
         print("\t{: <40}{: <10}".format(*row))
 
     while True:
-        print('Enter a command below. Type "help" to see a list of commands.')
+        print('\nEnter a command below. Type "help" to see a list of commands.')
         cmd = input('$ ').lower().split(' ')
 
         if cmd[0] == 'store':
@@ -37,10 +36,6 @@ def main():
         elif cmd[0] == 'get':
             key = cmd[1]
             print('Key "' + key + '" has value:', db.db_get(key))
-        elif cmd[0] == 'compact_segments':
-            print('\nCompacting segments on disk ...')
-            db.compact()
-            print('Done\n')
         elif cmd[0] == 'set_threshold':
             threshold = int(cmd[1])
             print('\nSetting new threshold ...')
@@ -62,9 +57,8 @@ def main():
             if arg < 0 or arg > 1:
                 print('Invalid option. Please choose a probability between 0 and 1.')
             else:
-                db.set_bloom_filter_false_pos_prob()
-                print(
-                    'Set the BloomFilters desired probability of a false positive to', float(cmd[1]))
+                db.set_bloom_filter_false_pos_prob(cmd[1])
+                print(Set the BloomFilters desired probability of a false positive to', float(cmd[1]))
         elif cmd[0] == 'help':
             for row in usage_msg:
                 print("\t{: <40} {: <10}".format(*row))
