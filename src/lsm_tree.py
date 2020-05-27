@@ -60,6 +60,9 @@ class LSMTree():
         # Check if new segment needed
         additional_size = len(key) + len(value)
         if self.memtable.total_bytes + additional_size > self.threshold:
+            # Run the compaction algorithm
+            self.new_compaction()
+
             # Flush memtable to disk
             self.flush_memtable_to_disk(self.current_segment_path())
             self.memtable = RedBlackTree()

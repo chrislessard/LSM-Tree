@@ -28,7 +28,7 @@ class TestDatabase(unittest.TestCase):
         Tests the db_set functionality.
         '''
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-        
+
         db.db_set('1', 'test1')
         db.db_set('2', 'test2')
 
@@ -1061,6 +1061,34 @@ class TestDatabase(unittest.TestCase):
             with open(TEST_BASEPATH + file, 'r') as s:
                 l = s.readlines()
                 self.assertEqual(l, expected_lines)
+
+    def test_db_set_calls_compaction(self):
+        '''
+        Tests that crossing the threshold with db set calls the compaction algorithm
+        '''
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.activate_bloom_filter()
+
+        db.set_threshold(20)
+
+        db.db_set('green', 'green')
+        db.db_set('meant', 'rents')
+
+        db.db_set('fring', 'rings')
+        db.db_set('sides', 'seeds')
+
+        db.db_set('scoop', 'merps')
+        db.db_set('harps', 'sterm')
+
+        db.db_set('fring', 'boots')
+        db.db_set('scrap', 'pracs')
+
+        db.db_set('scoon', 'coons')
+
+        with open(TEST_BASEPATH + 'test_file-2') as s:
+            lines = s.readlines()
+
+        self.assertEqual(lines, ['sides,seeds\n'])
 
 if __name__ == '__main__':
     unittest.main()
