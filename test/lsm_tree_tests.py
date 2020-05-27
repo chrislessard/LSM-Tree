@@ -902,18 +902,12 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.index.find_node('alex').value, 'rodriguez')
         self.assertEqual(db.index.find_node('john').value, 'tidal')
 
-
     # New compaction tests
     def test_delete_one_key_from_file(self):
         '''
         Tests that individual keys can be deleted from a given segment file.
         '''
-        lines = [
-            'red,1\n',
-            'blue,2\n',
-            'green,3\n',
-            'yellow,4\n',
-        ]
+        lines = ['red,1\n', 'blue,2\n', 'green,3\n', 'yellow,4\n',]
         keys = set(['green'])
         file = TEST_BASEPATH + 'test_file-1'
 
@@ -933,12 +927,7 @@ class TestDatabase(unittest.TestCase):
         '''
         Tests that individual keys can be deleted from a given segment file.
         '''
-        lines = [
-            'red,1\n',
-            'blue,2\n',
-            'green,3\n',
-            'yellow,4\n',
-            ]
+        lines = ['red,1\n', 'blue,2\n', 'green,3\n', 'yellow,4\n', ]
         keys = set(['green', 'blue'])
         file = TEST_BASEPATH + 'test_file-1'
 
@@ -959,18 +948,9 @@ class TestDatabase(unittest.TestCase):
         Tests that delete_keys_from_segments deletes a single key 
         from multiple segments.
         '''
-        lines = [
-            'red,1\n',
-            'blue,2\n',
-            'green,3\n',
-            'yellow,4\n',
-        ]
+        lines = ['red,1\n', 'blue,2\n', 'green,3\n', 'yellow,4\n', ]
+        files = ['test_file-1', 'test_file-2', 'test_file-3']
         keys = set(['green'])
-        file1 = 'test_file-1'
-        file2 = 'test_file-2'
-        file3 = 'test_file-3'
-
-        files = [file1, file2, file3]
 
         for file in files:
             with open(TEST_BASEPATH + file, 'w') as s:
@@ -990,41 +970,97 @@ class TestDatabase(unittest.TestCase):
                 l = s.readlines()
                 self.assertEqual(l, expected_lines)
 
-
-def test_delete_keys_from_segments_many_keys(self):
-    '''
-        Tests that delete_keys_from_segments deletes a single key
-        from multiple segments.
+    def test_delete_keys_from_segments_many_keys(self):
         '''
-    lines = [
-        'red,1\n',
-        'blue,2\n',
-        'green,3\n',
-        'yellow,4\n',
-    ]
-    keys = set(['red', 'green'])
-    file1 = 'test_file-1'
-    file2 = 'test_file-2'
-    file3 = 'test_file-3'
+            Tests that delete_keys_from_segments deletes a single key
+            from multiple segments.
+            '''
+        lines = ['red,1\n', 'blue,2\n', 'green,3\n', 'yellow,4\n', ]
+        files = ['test_file-1', 'test_file-2', 'test_file-3']
+        keys = set(['red', 'green'])
 
-    files = [file1, file2, file3]
+        for file in files:
+            with open(TEST_BASEPATH + file, 'w') as s:
+                for line in lines:
+                    s.write(line)
 
-    for file in files:
-        with open(TEST_BASEPATH + file, 'w') as s:
-            for line in lines:
-                s.write(line)
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.delete_keys_from_segments(keys, files)
 
-    db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-    db.delete_keys_from_segments(keys, files)
+        expected_lines = [
+            'blue,2\n',
+            'yellow,4\n',
+        ]
+        for file in files:
+            with open(TEST_BASEPATH + file, 'r') as s:
+                l = s.readlines()
+                self.assertEqual(l, expected_lines)
 
-    expected_lines = [
-        'blue,2\n',
-        'yellow,4\n',
-    ]
-    for file in files:
-        with open(TEST_BASEPATH + file, 'r') as s:
-            l = s.readlines()
-            self.assertEqual(l, expected_lines)
+    def test_new_compact_one_key_to_drop(self):
+        '''
+        Tets the new compaction algorithm
+        '''
+        # Prepare the values on disk
+        lines = ['red,1\n', 'blue,2\n', 'green,3\n', 'yellow,4\n',]
+        files = ['test_file-1', 'test_file-2', 'test_file-3']
+
+        for file in files:
+            with open(TEST_BASEPATH + file, 'w') as s:
+                for line in lines:
+                    s.write(line)
+
+        # Mock the database instance
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.segments = files[:]
+        db.activate_bloom_filter()
+
+        for line in lines:
+            key, val = line.split(',')
+            db.bloom_filter.add(key)
+
+        db.memtable.add('green', '5')
+
+        # Test
+        db.new_compaction()
+        expected_lines = ['red,1\n', 'blue,2\n', 'yellow,4\n']
+        for file in files:
+            with open(TEST_BASEPATH + file, 'r') as s:
+                l = s.readlines()
+                self.assertEqual(l, expected_lines)
+
+    def test_new_compact_multiple_keys_to_drop(self):
+        '''
+        Tets the new compaction algorithm
+        '''
+        # Prepare the values on disk
+        lines = ['red,1\n', 'blue,2\n', 'green,3\n', 'yellow,4\n', ]
+        files = ['test_file-1', 'test_file-2', 'test_file-3']
+
+        for file in files:
+            with open(TEST_BASEPATH + file, 'w') as s:
+                for line in lines:
+                    s.write(line)
+
+        # Mock the database instance
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.segments = files[:]
+        db.activate_bloom_filter()
+
+        for line in lines:
+            key, val = line.split(',')
+            db.bloom_filter.add(key)
+
+        db.memtable.add('green', '5')
+        db.memtable.add('blue', '5')
+        db.memtable.add('red', '5')
+
+        # Test
+        db.new_compaction()
+        expected_lines = ['yellow,4\n']
+        for file in files:
+            with open(TEST_BASEPATH + file, 'r') as s:
+                l = s.readlines()
+                self.assertEqual(l, expected_lines)
 
 if __name__ == '__main__':
     unittest.main()

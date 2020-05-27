@@ -278,6 +278,25 @@ class LSMTree():
 
     # New compaction helpers
 
+    def new_compaction(self):
+        ''' (self) -> None
+        Reads the keys from the memtable, determines which ones
+        having pre-existing records on disk and reclaims disk space accordingly.
+
+        Note: this will parse every segment in self.segments. It is intended to be
+        used BEFORE flushing the memtable to disk.
+        '''
+        memtable_nodes = self.memtable.in_order()
+
+        keys_on_disk = []
+        for node in memtable_nodes:
+            if self.bloom_filter.check(node.key):
+                keys_on_disk.append(node.key)
+
+        keys_on_disk = set(keys_on_disk)
+
+        self.delete_keys_from_segments(keys_on_disk, self.segments)
+
     def delete_keys_from_segments(self, deletion_keys, segment_names):
         ''' (self, list) -> None
         Deletes all keys stored in the set deletion_keys from each segment
