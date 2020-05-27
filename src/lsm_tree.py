@@ -275,9 +275,19 @@ class LSMTree():
         return '-'.join([name, new_number])
 
     # New compaction helpers
-    def delete_keys_from_segment(self, delete_keys, segment_path):
+
+    def delete_keys_from_segments(self, deletion_keys, segment_names):
+        ''' (self, list) -> None
+        Deletes all keys stored in the set deletion_keys from each segment
+        listed in segment_names.
+        '''
+        for segment in segment_names:
+            segment_path = self.segment_path(segment)
+            self.delete_keys_from_segment(deletion_keys, segment_path)
+
+    def delete_keys_from_segment(self, deletion_keys, segment_path):
         ''' (self, set(keys), str) -> None
-        Removes the lines with key in delete_keys from the file stored at segment 
+        Removes the lines with key in deletion_keys from the file stored at segment 
         path.
 
         The method achieves this by writing the desireable keys to a new 
@@ -290,7 +300,7 @@ class LSMTree():
             with open(temp_path, "w") as output:
                 for line in input:
                     key, value = line.split(',')
-                    if not key in delete_keys:
+                    if not key in deletion_keys:
                         output.write(line)
 
         remove_file(segment_path)

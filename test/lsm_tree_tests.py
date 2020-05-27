@@ -954,6 +954,77 @@ class TestDatabase(unittest.TestCase):
 
         self.assertTrue(altered_lines == ['red,1\n', 'yellow,4\n', ])
 
+    def test_delete_keys_from_segments_one_key(self):
+        '''
+        Tests that delete_keys_from_segments deletes a single key 
+        from multiple segments.
+        '''
+        lines = [
+            'red,1\n',
+            'blue,2\n',
+            'green,3\n',
+            'yellow,4\n',
+        ]
+        keys = set(['green'])
+        file1 = 'test_file-1'
+        file2 = 'test_file-2'
+        file3 = 'test_file-3'
+
+        files = [file1, file2, file3]
+
+        for file in files:
+            with open(TEST_BASEPATH + file, 'w') as s:
+                for line in lines:
+                    s.write(line)
+
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.delete_keys_from_segments(keys, files)
+
+        expected_lines = [
+            'red,1\n',
+            'blue,2\n',
+            'yellow,4\n',
+        ]
+        for file in files:
+            with open(TEST_BASEPATH + file, 'r') as s:
+                l = s.readlines()
+                self.assertEqual(l, expected_lines)
+
+
+def test_delete_keys_from_segments_many_keys(self):
+    '''
+        Tests that delete_keys_from_segments deletes a single key
+        from multiple segments.
+        '''
+    lines = [
+        'red,1\n',
+        'blue,2\n',
+        'green,3\n',
+        'yellow,4\n',
+    ]
+    keys = set(['red', 'green'])
+    file1 = 'test_file-1'
+    file2 = 'test_file-2'
+    file3 = 'test_file-3'
+
+    files = [file1, file2, file3]
+
+    for file in files:
+        with open(TEST_BASEPATH + file, 'w') as s:
+            for line in lines:
+                s.write(line)
+
+    db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+    db.delete_keys_from_segments(keys, files)
+
+    expected_lines = [
+        'blue,2\n',
+        'yellow,4\n',
+    ]
+    for file in files:
+        with open(TEST_BASEPATH + file, 'r') as s:
+            l = s.readlines()
+            self.assertEqual(l, expected_lines)
 
 if __name__ == '__main__':
     unittest.main()
