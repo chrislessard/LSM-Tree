@@ -903,5 +903,57 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.index.find_node('john').value, 'tidal')
 
 
+    # New compaction tests
+    def test_delete_one_key_from_file(self):
+        '''
+        Tests that individual keys can be deleted from a given segment file.
+        '''
+        lines = [
+            'red,1\n',
+            'blue,2\n',
+            'green,3\n',
+            'yellow,4\n',
+        ]
+        keys = set(['green'])
+        file = TEST_BASEPATH + 'test_file-1'
+
+        with open(file, 'w') as s:
+            for line in lines:
+                s.write(line)
+
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.delete_keys_from_segment(keys, file)
+
+        with open(file, 'r') as s:
+            altered_lines = s.readlines()
+
+        self.assertTrue(altered_lines == ['red,1\n', 'blue,2\n', 'yellow,4\n', ])
+
+    def test_delete_multiple_keys_from_file(self):
+        '''
+        Tests that individual keys can be deleted from a given segment file.
+        '''
+        lines = [
+            'red,1\n',
+            'blue,2\n',
+            'green,3\n',
+            'yellow,4\n',
+            ]
+        keys = set(['green', 'blue'])
+        file = TEST_BASEPATH + 'test_file-1'
+
+        with open(file, 'w') as s:
+            for line in lines:
+                s.write(line)
+
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.delete_keys_from_segment(keys, file)
+
+        with open(file, 'r') as s:
+            altered_lines = s.readlines()
+
+        self.assertTrue(altered_lines == ['red,1\n', 'yellow,4\n', ])
+
+
 if __name__ == '__main__':
     unittest.main()
