@@ -60,6 +60,7 @@ class LSMTree():
         # Check if new segment needed
         additional_size = len(key) + len(value)
         if self.memtable.total_bytes + additional_size > self.threshold:
+            # Flush memtable to disk
             self.flush_memtable_to_disk(self.current_segment_path())
             self.memtable = RedBlackTree()
             self.memtable_wal().clear()
@@ -239,22 +240,23 @@ class LSMTree():
         '''
         sparsity_counter = self.sparsity()
 
-        # We could use Path(path).stat().st_size, but this may lead to 
-        # a bug unless we know that the write mechanism is consistently flushing to disk.
-        # This is faster than adding that guarantee.
-        offset = 0
+        # We track the offset for each key ourself, instead of checking the files size as we
+        # write, since its faster than making sure that every new write is flushed to disk.
+        key_offset = 0
 
         traversal = self.memtable.in_order()
         with open(path, 'w') as s:
             for node in traversal:
                 log = self.as_log_entry(node.key, node.value)
 
+                # Update sparse index
                 if sparsity_counter == 1:
-                    self.index.add(node.key, node.value, offset=offset, segment=self.current_segment)
+                    self.index.add(node.key, node.value,
+                                   offset=key_offset, segment=self.current_segment)
                     sparsity_counter = self.sparsity() + 1
 
                 s.write(log)
-                offset += len(log)
+                key_offset += len(log)
                 sparsity_counter -= 1
 
     def as_log_entry(self, key, value):
