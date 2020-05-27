@@ -352,6 +352,9 @@ class TestDatabase(unittest.TestCase):
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.memtable = RedBlackTree()
 
+        # Normally the bloom filter is loaded with other metadata. WE're simulating that here
+        db.bloom_filter.add('chris')
+
         db.restore_memtable()
         self.assertTrue(db.memtable.contains('chris'), True)
         self.assertEqual(db.db_get('chris'), 'hemsworth')
