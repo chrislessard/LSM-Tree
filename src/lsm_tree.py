@@ -264,6 +264,16 @@ class LSMTree():
         '''
         return str(key) + ',' + (value) + '\n'
 
+    def incremented_segment_name(self):
+        ''' (self) -> str
+        Calculate the name that results from incrementing the current
+        segment's number.
+        '''
+        name, number = self.current_segment.split('-')
+        new_number = str(int(number) + 1)
+
+        return '-'.join([name, new_number])
+
     # Compaction and merge helpers
     def merge_into_first_segment(self, segment1, segment2):
         ''' (self, str, str) -> str
@@ -315,16 +325,6 @@ class LSMTree():
             for key, val in keys.items():
                 log = self.as_log_entry(key, val.strip())
                 s.write(log)
-
-    def incremented_segment_name(self):
-        ''' (self) -> None
-        Calculate the name that results from incrementing the current
-        segment's number.
-        '''
-        name, number = self.current_segment.split('-')
-        new_number = str(int(number) + 1)
-
-        return '-'.join([name, new_number])
 
     def rename_segments(self, seg_list):
         ''' (self, [str]) -> [str]

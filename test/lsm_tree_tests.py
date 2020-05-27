@@ -216,150 +216,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.memtable.total_bytes, 6)
         self.assertEqual(db.current_segment, 'test_file-2')
 
-    # # compaction
-    def test_compact_single_segment(self):
-        '''
-        Tests that a single segment can be compacted.
-        '''
-        with open(TEST_BASEPATH + TEST_FILENAME, 'w') as s:
-            s.write('1,test1\n')
-            s.write('2,test2\n')
-            s.write('3,test3\n')
-            s.write('1,test4\n')
-            s.write('2,test5\n')
-            s.write('3,test6\n')
-            s.write('1,test7\n')
-            s.write('2,test8\n')
-            s.write('3,test9\n')
-
-        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-        db.compact_segment(TEST_FILENAME)
-
-        with open(TEST_BASEPATH + TEST_FILENAME, 'r') as s:
-            lines = s.readlines()
-
-        self.assertEqual(lines, ['1,test7\n', '2,test8\n', '3,test9\n'])
-
-    def test_compact_even_number_multiple_segments(self):
-        '''
-        Tests that multiple segments can be compacted.
-        '''
-        segments = ['test_file-1', 'test_file-2']
-        with open(TEST_BASEPATH + segments[0], 'w') as s:
-            s.write('1,test1\n')
-            s.write('2,test2\n')
-            s.write('1,test3\n')
-            s.write('2,test4\n')
-
-        with open(TEST_BASEPATH + segments[1], 'w') as s:
-            s.write('1,test5\n')
-            s.write('2,test6\n')
-            s.write('1,test7\n')
-            s.write('2,test8\n')
-
-        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-        db.segments = segments
-        db.compact()
-
-        # Check first segment is correct
-        with open(TEST_BASEPATH + segments[0], 'r') as s:
-            first_segment_lines = s.readlines()
-
-        expected_result = ['1,test7\n', '2,test8\n']
-
-        self.assertEqual(first_segment_lines, expected_result)
-        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), False)
-
-    def test_compact_odd_number_multiple_segments(self):
-        '''
-        Tests that multiple segments can be compacted.
-        '''
-        segments = ['test_file-1', 'test_file-2', 'test_file-3']
-        with open(TEST_BASEPATH + segments[0], 'w') as s:
-            s.write('1,test1\n')
-            s.write('2,test2\n')
-            s.write('4,test9\n')
-            s.write('2,test4\n')
-
-        with open(TEST_BASEPATH + segments[1], 'w') as s:
-            s.write('1,test5\n')
-            s.write('2,test6\n')
-            s.write('3,test7\n')
-            s.write('2,test8\n')
-
-        with open(TEST_BASEPATH + segments[2], 'w') as s:
-            s.write('1,test9\n')
-            s.write('2,testa\n')
-            s.write('3,test9\n')
-            s.write('2,testc\n')
-
-        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-        db.segments = segments
-        db.compact()
-
-        # Check first segment is correct
-        with open(TEST_BASEPATH + segments[0], 'r') as s:
-            first_segment_lines = s.readlines()
-
-        expected_result = [
-            '1,test9\n', 
-            '2,testc\n', 
-            '3,test9\n', 
-            '4,test9\n', 
-        ]
-
-        self.assertEqual(first_segment_lines, expected_result)
-
-        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), False)
-        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[2]), False)
-
-    def test_compact_multiple_segments_with_threshold(self):
-        '''
-        Tests that the compaction algorithm correctly factors in the segment
-        size threshold when merging segments.
-        '''
-        segments = ['test_file-1', 'test_file-2', 'test_file-3']
-        with open(TEST_BASEPATH + segments[0], 'w') as s:
-            s.write('1,four\n')
-            s.write('2,bomb\n')
-            s.write('1,john\n')
-            s.write('2,long\n')
-
-        with open(TEST_BASEPATH + segments[1], 'w') as s:
-            s.write('3,gone\n')
-            s.write('4,girl\n')
-            s.write('3,woot\n')
-            s.write('4,chew\n')
-
-        with open(TEST_BASEPATH + segments[2], 'w') as s:
-            s.write('5,noob\n')
-            s.write('6,fear\n')
-            s.write('5,love\n')
-            s.write('6,osrs\n')
-
-        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-        db.segments = segments
-        db.threshold = 14 * 2
-        db.compact()
-
-        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[0]), True)
-        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), True)
-        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[2]), False)
-
-        first_seg_expected_vals = ['1,john\n', '2,long\n', '3,woot\n', '4,chew\n']
-        scnd_seg_expected_vals = ['5,love\n', '6,osrs\n']
-
-        # Check first segment is correct
-        with open(TEST_BASEPATH + segments[0], 'r') as s:
-            first_segment_lines = s.readlines()
-
-        # Check second segment is correct
-        with open(TEST_BASEPATH + segments[1], 'r') as s:
-            scnd_segment_lines = s.readlines()
-
-        self.assertEqual(first_segment_lines, first_seg_expected_vals)
-        self.assertEqual(scnd_segment_lines, scnd_seg_expected_vals)
-
+    # Merging algorithm
     def test_merge_two_segments(self):
         segments = ['test_file-1', 'test_file-2']
         with open(TEST_BASEPATH + segments[0], 'w') as s:
@@ -561,6 +418,7 @@ class TestDatabase(unittest.TestCase):
         db.set_sparsity_factor(7)
         self.assertEqual(db.sparsity(), 14)
 
+    # Flush memtable
     def test_flush_memtable_populates_index(self):
         '''
         Tests that flushing the memtable to disk populates the index.
@@ -677,6 +535,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(line1, 'jkl,012\n')
         self.assertEqual(line2, 'vwx,234\n')
 
+    # Index
     def test_retrieve_value_from_index(self):
         '''
         Tests that indexed values can be retrieved appropriately
@@ -775,7 +634,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.db_get('christian'), 'dior')
         self.assertEqual(db.db_get('daniel'), 'lessard')
 
-    def test_repopulate_index_stores_correst_offsetss(self):
+    def test_repopulate_index_stores_correst_offsets(self):
         '''
         Tests that the repopulate_index method correctly stores
         offsets to locations of the records on disk.
@@ -862,6 +721,152 @@ class TestDatabase(unittest.TestCase):
         self.assertFalse(db.index.contains('cyan'))
         self.assertFalse(db.index.contains('yellow'))
 
+    # # compaction
+
+    def test_compact_single_segment(self):
+        '''
+        Tests that a single segment can be compacted.
+        '''
+        with open(TEST_BASEPATH + TEST_FILENAME, 'w') as s:
+            s.write('1,test1\n')
+            s.write('2,test2\n')
+            s.write('3,test3\n')
+            s.write('1,test4\n')
+            s.write('2,test5\n')
+            s.write('3,test6\n')
+            s.write('1,test7\n')
+            s.write('2,test8\n')
+            s.write('3,test9\n')
+
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.compact_segment(TEST_FILENAME)
+
+        with open(TEST_BASEPATH + TEST_FILENAME, 'r') as s:
+            lines = s.readlines()
+
+        self.assertEqual(lines, ['1,test7\n', '2,test8\n', '3,test9\n'])
+
+    def test_compact_even_number_multiple_segments(self):
+        '''
+        Tests that multiple segments can be compacted.
+        '''
+        segments = ['test_file-1', 'test_file-2']
+        with open(TEST_BASEPATH + segments[0], 'w') as s:
+            s.write('1,test1\n')
+            s.write('2,test2\n')
+            s.write('1,test3\n')
+            s.write('2,test4\n')
+
+        with open(TEST_BASEPATH + segments[1], 'w') as s:
+            s.write('1,test5\n')
+            s.write('2,test6\n')
+            s.write('1,test7\n')
+            s.write('2,test8\n')
+
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.segments = segments
+        db.compact()
+
+        # Check first segment is correct
+        with open(TEST_BASEPATH + segments[0], 'r') as s:
+            first_segment_lines = s.readlines()
+
+        expected_result = ['1,test7\n', '2,test8\n']
+
+        self.assertEqual(first_segment_lines, expected_result)
+        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), False)
+
+    def test_compact_odd_number_multiple_segments(self):
+        '''
+        Tests that multiple segments can be compacted.
+        '''
+        segments = ['test_file-1', 'test_file-2', 'test_file-3']
+        with open(TEST_BASEPATH + segments[0], 'w') as s:
+            s.write('1,test1\n')
+            s.write('2,test2\n')
+            s.write('4,test9\n')
+            s.write('2,test4\n')
+
+        with open(TEST_BASEPATH + segments[1], 'w') as s:
+            s.write('1,test5\n')
+            s.write('2,test6\n')
+            s.write('3,test7\n')
+            s.write('2,test8\n')
+
+        with open(TEST_BASEPATH + segments[2], 'w') as s:
+            s.write('1,test9\n')
+            s.write('2,testa\n')
+            s.write('3,test9\n')
+            s.write('2,testc\n')
+
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.segments = segments
+        db.compact()
+
+        # Check first segment is correct
+        with open(TEST_BASEPATH + segments[0], 'r') as s:
+            first_segment_lines = s.readlines()
+
+        expected_result = [
+            '1,test9\n',
+            '2,testc\n',
+            '3,test9\n',
+            '4,test9\n',
+        ]
+
+        self.assertEqual(first_segment_lines, expected_result)
+
+        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), False)
+        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[2]), False)
+
+    def test_compact_multiple_segments_with_threshold(self):
+        '''
+        Tests that the compaction algorithm correctly factors in the segment
+        size threshold when merging segments.
+        '''
+        segments = ['test_file-1', 'test_file-2', 'test_file-3']
+        with open(TEST_BASEPATH + segments[0], 'w') as s:
+            s.write('1,four\n')
+            s.write('2,bomb\n')
+            s.write('1,john\n')
+            s.write('2,long\n')
+
+        with open(TEST_BASEPATH + segments[1], 'w') as s:
+            s.write('3,gone\n')
+            s.write('4,girl\n')
+            s.write('3,woot\n')
+            s.write('4,chew\n')
+
+        with open(TEST_BASEPATH + segments[2], 'w') as s:
+            s.write('5,noob\n')
+            s.write('6,fear\n')
+            s.write('5,love\n')
+            s.write('6,osrs\n')
+
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.segments = segments
+        db.threshold = 14 * 2
+        db.compact()
+
+        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[0]), True)
+        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), True)
+        self.assertEqual(os.path.exists(TEST_BASEPATH + segments[2]), False)
+
+        first_seg_expected_vals = ['1,john\n',
+                                   '2,long\n', '3,woot\n', '4,chew\n']
+        scnd_seg_expected_vals = ['5,love\n', '6,osrs\n']
+
+        # Check first segment is correct
+        with open(TEST_BASEPATH + segments[0], 'r') as s:
+            first_segment_lines = s.readlines()
+
+        # Check second segment is correct
+        with open(TEST_BASEPATH + segments[1], 'r') as s:
+            scnd_segment_lines = s.readlines()
+
+        self.assertEqual(first_segment_lines, first_seg_expected_vals)
+        self.assertEqual(scnd_segment_lines, scnd_seg_expected_vals)
+
     def test_compaction_repopulates_index(self):
         '''
         Tests that the compaction algorithm repopulates the index.
@@ -896,6 +901,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.index.find_node('chris').value, 'manson')
         self.assertEqual(db.index.find_node('alex').value, 'rodriguez')
         self.assertEqual(db.index.find_node('john').value, 'tidal')
+
 
 if __name__ == '__main__':
     unittest.main()
