@@ -80,21 +80,18 @@ class LSMTree():
         self.memtable.add(key, value)
         self.memtable.total_bytes += additional_size
 
-        # Add to bloom filters
-        self.bloom_filter.add(key)
-
     def db_get(self, key):
         ''' (self, str) -> None
         Retrieve the value associated with key in the db
         '''
-        # Check the bloom filter
-        if not self.bloom_filter.check(key):
-            return None 
-
-        # Attempts to find the key in the memtable first
+        # Attempt to find the key in the memtable first
         memtable_result = self.memtable.find_node(key)
         if memtable_result:
             return memtable_result.value
+
+        # Check the bloom filter before searching disk
+        if not self.bloom_filter.check(key):
+            return None
 
         # Check the index
         floor_val = self.index.floor(key)
@@ -218,6 +215,8 @@ class LSMTree():
                                    offset=key_offset, segment=self.current_segment)
                     sparsity_counter = self.sparsity() + 1
 
+                # Add to bloom filters
+                self.bloom_filter.add(node.key)
                 s.write(log)
                 key_offset += len(log)
                 sparsity_counter -= 1

@@ -132,11 +132,16 @@ class TestDatabase(unittest.TestCase):
         Tests the db_get functionality when the db threshold is low.
         '''
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        pairs = [
+            ('chris','lessard'),
+            ('daniel','lessard'),
+            ('charles','lessard'),
+            ('adrian', 'lessard')
+        ]
         db.threshold = 20
-        db.db_set('chris','lessard')
-        db.db_set('daniel','lessard')
-        db.db_set('charles','lessard')
-        db.db_set('adrian','lessard')
+
+        for key, val in pairs:
+            db.db_set(key, val)
 
         self.assertEqual(db.db_get('chris'), 'lessard')
         self.assertEqual(db.db_get('daniel'), 'lessard')
@@ -161,9 +166,14 @@ class TestDatabase(unittest.TestCase):
         Tests that db_get retrieves the most recent key value.
         '''
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        pairs = [
+            ('chris', 'lessard'),
+            ('chris', 'martinez')
+        ]
 
-        db.db_set('chris', 'lessard')
-        db.db_set('chris', 'martinez')
+        for key, val in pairs:
+            db.db_set(key, val)
+
         self.assertEqual(db.db_get('chris'), 'martinez')
     
     def test_db_get_retrieve_most_recent_val_multiple_thresholds(self):
