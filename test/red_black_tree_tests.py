@@ -2195,7 +2195,7 @@ class RbTreePerformanceTests(unittest.TestCase):
         for el in elements:
             tree.add(el)
         time_taken = datetime.now()-start_time
-        self.assertTrue(time_taken.seconds < 5)
+        self.assertTrue(time_taken.seconds < 1)
 
     def test_deletion_performance(self):
         """
@@ -2211,7 +2211,7 @@ class RbTreePerformanceTests(unittest.TestCase):
         for el in elements:
             tree.remove(el)
         time_taken = datetime.now()-start_time
-        self.assertTrue(time_taken.seconds < 5)
+        self.assertTrue(time_taken.seconds < 1)
 
     def test_deletion_and_addition_performance(self):
         possible_values = list(range(-500000, 500000))
@@ -2232,7 +2232,7 @@ class RbTreePerformanceTests(unittest.TestCase):
             tree.add(el)
 
         time_taken = datetime.now()-start_time
-        self.assertTrue(time_taken.seconds < 5)
+        self.assertTrue(time_taken.seconds < 1)
 
 
 if __name__ == '__main__':
