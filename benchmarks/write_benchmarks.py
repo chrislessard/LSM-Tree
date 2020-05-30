@@ -109,25 +109,6 @@ print(
         benchmark_execute, setup=benchmark_setup, number=1))
 )
 
-#
-#
-# Write 100k random key value pairs, very high threshold
-#
-#
-benchmark_setup = setup + """
-db.set_threshold(4000000)
-num_writes = 100000
-pairs = [(str(k), str(k)) for k in range(100000)]
-"""
-benchmark_execute = """
-for key, val in pairs:
-    db.db_set(key, val)
-"""
-print(
-    'Write 100k unique keys, threshold 4mil: {}'.format(timeit.timeit(
-        benchmark_execute, setup=benchmark_setup, number=1))
-)
-
 
 print('\nNew segments created:')
 #
@@ -156,7 +137,7 @@ print('\nNo new segments created:')
 #
 #
 benchmark_setup = setup + """
-db.set_threshold(6000000)
+db.set_threshold(4000000)
 num_writes = 1000000
 pairs = [(str(k), str(k)) for k in range(100000)]
 """
@@ -249,6 +230,27 @@ for key, value in pairs:
 """
 print(
     'Random pairs 100k times, threshold 4mil: {}'.format(timeit.timeit(
+        benchmark_execute, setup=benchmark_setup, number=1))
+)
+
+
+#
+#
+# Write 100k random key value pairs, high threshold
+#
+#
+benchmark_setup = setup + """
+db.set_threshold(2000000)
+num_writes = 1000000
+strings = [random_string(5) for i in range(100)]
+pairs = [(random.choice(strings), random.choice(strings)) for i in range(num_writes)]
+"""
+benchmark_execute = """
+for key, value in pairs:
+    db.db_set(key, value)
+"""
+print(
+    'Random pairs 1mil times, threshold 2mil: {}'.format(timeit.timeit(
         benchmark_execute, setup=benchmark_setup, number=1))
 )
 
