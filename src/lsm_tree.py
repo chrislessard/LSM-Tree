@@ -44,30 +44,25 @@ class LSMTree():
         ''' (self, str, str) -> None
         Stores a new key value pair in the DB
         '''
-        log = self.as_log_entry(key, value)
+        log = self.to_log_entry(key, value)
 
         # Check if we can save effort by updating the memtable in place
         node = self.memtable.find_node(key)
         if node:
-            # Write to memtable write ahead log in case of crash
             self.memtable_wal().write(log)
-
-            # Write value
             node.value = value
             return
 
         # Check if new segment needed
         additional_size = len(key) + len(value)
         if self.memtable.total_bytes + additional_size > self.threshold:
-            # Run the compaction algorithm
             self.compact()
-
-            # Flush memtable to disk
             self.flush_memtable_to_disk(self.current_segment_path())
+
+            # Update bookkeeping metadata
             self.memtable = RedBlackTree()
             self.memtable_wal().clear()
 
-            # Update bookkeeping metadata
             self.segments.append(self.current_segment)
             new_seg_name = self.incremented_segment_name()
             self.current_segment = new_seg_name
@@ -129,7 +124,7 @@ class LSMTree():
 
     def memtable_wal(self):
         ''' (self) -> str
-        Returns the full path to the memtable backup.
+        Returns an instance of the write ahead log.
         '''
         return AppendLog.instance(self.memtable_wal_path())
 
@@ -140,10 +135,8 @@ class LSMTree():
         segments = self.segments[:]
         while len(segments):
             segment = segments.pop()
-            segment_path = self.segments_directory + segment
 
-            val = None
-            with open(segment_path, 'r') as s:
+            with open(self.segment_path(segment), 'r') as s:
                 for line in s:
                     k, v = line.split(',')
                     if k == key:
@@ -155,10 +148,8 @@ class LSMTree():
         Checks to see if any metadata or memtable logs are present from the previous
         session, and load them into the system.
         '''
-        metadata_path = self.segments_directory + 'database_metadata'
-
-        if Path(metadata_path).exists():
-            with open(metadata_path, 'rb') as s:
+        if Path(self.metadata_path()).exists():
+            with open(self.metadata_path(), 'rb') as s:
                 metadata = pickle.load(s)
                 self.segments = metadata['segments']
                 self.current_segment = metadata['current_segment']
@@ -177,9 +168,8 @@ class LSMTree():
             'bf_num_items': self.bf_num_items,
             'bf_false_pos': self.bf_false_pos_prob
         }
-        backup_path = self.segments_directory + 'database_metadata'
 
-        with open(backup_path, 'wb') as s:
+        with open(self.metadata_path(), 'wb') as s:
             pickle.dump(bookkeeping_info, s)
 
     def restore_memtable(self):
@@ -194,20 +184,22 @@ class LSMTree():
                     self.memtable.total_bytes += len(key) + len(value)
 
     # Write helpers
+
     def flush_memtable_to_disk(self, path):
         ''' (self, str) -> None
         Writes the contents of the current memtable to disk and wipes the current memtable.
+
+        Updates the index and adds keys to the bloom filter.
         '''
         sparsity_counter = self.sparsity()
 
-        # We track the offset for each key ourself, instead of checking the files size as we
+        # We track the offset for each key ourself, instead of checking the file's size as we
         # write, since its faster than making sure that every new write is flushed to disk.
         key_offset = 0
 
-        traversal = self.memtable.in_order()
         with open(path, 'w') as s:
-            for node in traversal:
-                log = self.as_log_entry(node.key, node.value)
+            for node in self.memtable.in_order():
+                log = self.to_log_entry(node.key, node.value)
 
                 # Update sparse index
                 if sparsity_counter == 1:
@@ -221,7 +213,7 @@ class LSMTree():
                 key_offset += len(log)
                 sparsity_counter -= 1
 
-    def as_log_entry(self, key, value):
+    def to_log_entry(self, key, value):
         '''(str, str) -> str
         Converts a key value pair into a comma seperated newline delimited
         log entry.
@@ -242,8 +234,8 @@ class LSMTree():
 
     def compact(self):
         ''' (self) -> None
-        Reads the keys from the memtable, determines which ones
-        having pre-existing records on disk and reclaims disk space accordingly.
+        Reads the keys from the memtable, determines which ones probably
+        have pre-existing records on disk and reclaims disk space accordingly.
 
         Note: this will parse every segment in self.segments. It is intended to be
         used BEFORE flushing the memtable to disk.
@@ -393,3 +385,9 @@ class LSMTree():
         Returns the path to the given segment_name.
         '''
         return self.segments_directory + segment_name
+
+    def metadata_path(self):
+        ''' (self) -> str
+        Returns the path to the metadata backup file.
+        '''
+        return self.segments_directory + 'database_metadata'

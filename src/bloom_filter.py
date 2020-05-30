@@ -5,15 +5,15 @@ from bitarray import bitarray
 class BloomFilter:
     # For an explanation of the math, visit 
     # https://en.wikipedia.org/wiki/Bloom_filter#Probability_of_false_positives.
+
     # A condensed explanation can be found here:
     # https://stackoverflow.com/questions/658439/how-many-hash-functions-does-my-bloom-filter-need
 
     def __init__(self, num_items, false_positive_prob): 
         ''' (self, int, float) -> BloomFilter
-
         Creates a new BloomFilter. num_items represents the number of items 
-        that you expect to store in the structure. fb_prob represents the 
-        desired probability of a false positive, represent as a decimal value 
+        expected to be stored in the structure. fb_prob represents the 
+        desired probability of a false positive, represented as a decimal value 
         between 0 and 1. 
         
         Note: A lower false positive probability comes at the expense of time 
@@ -28,7 +28,6 @@ class BloomFilter:
 
     def add(self, item): 
         ''' (self, str) -> None
-
         Add item to the BloomFilter.
         '''
         digests = [] 
@@ -51,19 +50,18 @@ class BloomFilter:
         return True
   
     # Helpers
-    def bit_array_size(self, n, p): 
+    def bit_array_size(self, num_items, probability):
         ''' (self, int, float) -> int
-
         Return the required size of the bit array, m, as a function
         of n, the number of items expect to be stored, and p,
         the desired false positive probability.
  
         m = -(n * lg(p)) / (lg(2)^2) 
         '''
-        m = -(n * log(p)) / (log(2)**2) 
+        m = -(num_items * log(probability)) / (log(2)**2)
         return int(m)
 
-    def get_hash_count(self, m, n): 
+    def get_hash_count(self, bit_arr_size, num_items): 
         ''' (self, int, int) -> int
         Return the required number of hash functions to be used
         by the structure, as a function of m, the size of the bit array,
@@ -78,5 +76,4 @@ class BloomFilter:
         is used and called with various seeds, each of which produce a different 
         digest for the same input.
         '''
-        k = (m/n) * log(2) 
-        return int(k) 
+        return int((bit_arr_size/num_items) * log(2))
