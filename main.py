@@ -58,7 +58,7 @@ def main():
                 print('Invalid option. Please choose a probability between 0 and 1.')
             else:
                 db.set_bloom_filter_false_pos_prob(cmd[1])
-                print(Set the BloomFilters desired probability of a false positive to', float(cmd[1]))
+                print('Set the BloomFilters desired probability of a false positive to', float(cmd[1]))
         elif cmd[0] == 'help':
             for row in usage_msg:
                 print("\t{: <40} {: <10}".format(*row))
