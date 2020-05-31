@@ -58,7 +58,38 @@ class TestDatabase(unittest.TestCase):
         node2 = db.memtable.find_node('2')
         self.assertEqual(node2.value, 'test2')
 
-    def test_in_order_traversal(self):
+    def test_db_set_writes_to_wal(self):
+        '''
+        Tests that db_set invocations write the values to the write-ahead-log.
+        '''
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+
+        # The singleton instance will persist throughout the suite.
+        # We need to clear the instance explicitely in order to make sure that values from old tests don't persist.
+        db.memtable_wal().clear()
+        open(TEST_BASEPATH + BKUP_NAME, 'w').close()
+
+        db.db_set('chris', 'lessard')
+        db.db_set('daniel', 'lessard')
+
+        self.assertEqual(Path(TEST_BASEPATH + BKUP_NAME).exists(), True)
+        with open(TEST_BASEPATH + BKUP_NAME, 'r') as s:
+            lines = s.readlines()
+
+        self.assertEqual(len(lines), 2)
+
+    def test_db_set_key_update_does_not_increment_memtable_total_bytes(self):
+        '''
+        Tests that adding a new value for a key that already exists in the
+        memtable does not change the value of the threshold.
+        '''
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        db.db_set('mr', 'bean')
+        self.assertEqual(db.memtable.total_bytes, 6)
+        db.db_set('mr', 'toast')
+        self.assertEqual(db.memtable.total_bytes, 6)
+
+    def test_memtable_in_order_traversal(self):
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.memtable.add('chris', 'lessard')
         db.memtable.add('daniel', 'lessard')
@@ -70,7 +101,7 @@ class TestDatabase(unittest.TestCase):
 
         self.assertEqual(vals, ['antony', 'chris', 'daniel', 'debra'])
 
-    def test_flush_memtable(self):
+    def test_flush_memtable_to_disk_flushes_memtable_to_disk(self):
         '''
         Tests that the memtable can be flushed to disk
         '''
@@ -85,39 +116,8 @@ class TestDatabase(unittest.TestCase):
         expected_lines = ['chris,lessard\n', 'daniel,lessard\n']
         self.assertEqual(lines, expected_lines)
 
-    def test_db_set_writes_to_wal(self):
-        '''
-        Tests that db_set invocations write the values to the write-ahead-log.
-        '''
-        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-        
-        # The singleton instance will persist throughout the suite.
-        # We need to clear the instance explicitely in order to make sure that values from old tests don't persist.
-        db.memtable_wal().clear()
-        open(TEST_BASEPATH + BKUP_NAME, 'w').close()
-
-        db.db_set('chris', 'lessard')
-        db.db_set('daniel', 'lessard')
-
-        self.assertEqual(Path(TEST_BASEPATH + BKUP_NAME).exists(), True)
-        with open(TEST_BASEPATH + BKUP_NAME, 'r') as s:
-            lines = s.readlines()
-        
-        self.assertEqual(len(lines), 2)
-
-    def test_key_update_does_not_increment_memtable_total_bytes(self):
-        '''
-        Tests that adding a new value for a key that already exists in the
-        memtable does not change the value of the threshold.
-        '''
-        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-        db.db_set('mr', 'bean')
-        self.assertEqual(db.memtable.total_bytes, 6)
-        db.db_set('mr', 'toast')
-        self.assertEqual(db.memtable.total_bytes, 6)
-
     # db_get
-    def test_db_get_single_val_retrieval(self):
+    def test_db_get_does_single_val_retrieval(self):
         '''
         Tests the retrieval of a single value written into the db
         '''
@@ -127,7 +127,7 @@ class TestDatabase(unittest.TestCase):
 
         self.assertEqual(val, 'lessard')
     
-    def test_db_get_low_threshold(self):
+    def test_db_get_gets_when_threshold_is_low(self):
         '''
         Tests the db_get functionality when the db threshold is low.
         '''
@@ -148,7 +148,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.db_get('charles'), 'lessard')
         self.assertEqual(db.db_get('adrian'), 'lessard')
 
-    def test_db_get_miss(self):
+    def test_db_get_handles_miss(self):
         '''
         Tests the db_get functionality when the key has not been stored in the db.
         '''
@@ -161,7 +161,7 @@ class TestDatabase(unittest.TestCase):
 
         self.assertEqual(db.db_get('debra'), None)
 
-    def test_db_get_retrieve_most_recent_val(self):
+    def test_db_get_retrieves_most_recent_val(self):
         '''
         Tests that db_get retrieves the most recent key value.
         '''
@@ -176,7 +176,7 @@ class TestDatabase(unittest.TestCase):
 
         self.assertEqual(db.db_get('chris'), 'martinez')
     
-    def test_db_get_retrieve_most_recent_val_multiple_thresholds(self):
+    def test_db_get_retrieves_most_recent_val_when_memtable_threshold_low(self):
         '''
         Tests that db_get retrieves the most recent key value.
         '''
@@ -187,9 +187,9 @@ class TestDatabase(unittest.TestCase):
         db.db_set('chris', 'martinez')
         self.assertEqual(db.db_get('chris'), 'martinez')
     
-    def test_db_get_retrieve_val_multiple_segments(self):
+    def test_db_get_retrieves_value_when_multiple_segments_exist(self):
         '''
-        Tests the db_get functionality.
+        Tests the db_get functionality when multiple segments exist on disk.
         '''
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         db.threshold = 10
@@ -205,16 +205,18 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.db_get('daniel'), 'lessard')
         self.assertEqual(db.db_get('a'), 'c')
 
-    def test_get_segment_path(self):
+    # segments
+    def test_segment_path_gets_segment_path(self):
         ''' 
         Tests that the segment path can be retrieved for any segment
         '''
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
-        self.assertEqual(db.segment_path('segment1'), TEST_BASEPATH + 'segment1')
-        self.assertEqual(db.segment_path('segment5'), TEST_BASEPATH + 'segment5')
+        self.assertEqual(db.segment_path('segment1'),
+                         TEST_BASEPATH + 'segment1')
+        self.assertEqual(db.segment_path('segment5'),
+                         TEST_BASEPATH + 'segment5')
 
-    # segments
-    def test_db_set_uses_segment(self):
+    def test_db_set_uses_new_segments(self):
         '''
         Tests that new segments are created and used when the threshold is reached.
         '''
@@ -227,7 +229,11 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.current_segment, 'test_file-2')
 
     # Merging algorithm
-    def test_merge_two_segments(self):
+    def test_merge_merges_two_segments(self):
+        '''
+        Tests that the merge algorithm merges two segments on disk,
+        respecting the order of keys and drops redundancies.
+        '''
         segments = ['test_file-1', 'test_file-2']
         with open(TEST_BASEPATH + segments[0], 'w') as s:
             s.write('1,test1\n')
@@ -253,7 +259,7 @@ class TestDatabase(unittest.TestCase):
         # Check that the second file was deleted
         self.assertEqual(os.path.exists(TEST_BASEPATH + segments[1]), False)
 
-    def test_set_threshold(self):
+    def test_set_threshold_sets_thresholds(self):
         '''
         Tests that the user can reset the threshold to the value they want.
         '''
@@ -264,6 +270,9 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.threshold, 1000)
 
     def test_save_metadata_saves_metadata(self):
+        '''
+        Tests that DB metadata can be saved to disk.
+        '''
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         segments = ['segment-1', 'segment-2', 'segment-3']
         db.segments = segments
@@ -282,9 +291,9 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(metadata['bf_false_pos'], 0.5)
         self.assertEqual(metadata['bf_num_items'], 100)
 
-    def test_load_metadata_segments_at_init(self):
+    def test_load_metadata_loads_segments_at_init_time(self):
         '''
-        Checks that pre-existing segments are loaded into the system at run time.
+        Checks that pre-existing segments are loaded into the system at initialization time.
         '''
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
         segments = ['segment-1', 'segment-2', 'segment-3']
@@ -306,7 +315,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.bf_false_pos_prob, 0.5)
         self.assertEqual(db.bf_num_items, 100)
 
-    def test_load_memtable_from_wal(self):
+    def test_restore_memtable_loads_memtable_from_wal(self):
         '''
         Tests that the memtable can be restored from the write-ahead-log.
         '''
@@ -327,7 +336,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.memtable.contains('pad'), True)
         self.assertEqual(db.memtable.total_bytes, 12)
 
-    def test_load_memtable_from_wal_keeps_update(self):
+    def test_restore_memtable_keeps_updates(self):
         '''
         Tests that updates persist when reloading the memtable 
         from the write-ahead-log.
@@ -358,10 +367,9 @@ class TestDatabase(unittest.TestCase):
         self.assertTrue(db.memtable.contains('chris'), True)
         self.assertEqual(db.db_get('chris'), 'hemsworth')
 
-
-    def test_initializing_db_loads_metadata_and_memtable(self):
+    def test_init_loads_metadata_and_memtable(self):
         '''
-        Tests that initializing an new instance of the database loads
+        Tests that initializing a new instance of the database loads
         metadata and memtable info.
         '''
         db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
@@ -388,7 +396,7 @@ class TestDatabase(unittest.TestCase):
         self.assertTrue(db.memtable.contains('spanish'))
 
     # Index
-    def test_set_db_sparsity_factor(self):
+    def test_set_sparsity_factor_sets_sparsity_factor(self):
         '''
         Tests that the sparsity of the database's index can be retrieved.
         '''
@@ -417,7 +425,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.sparsity(), 14)
 
     # Flush memtable
-    def test_flush_memtable_populates_index(self):
+    def test_flush_memtable_to_disk_populates_index(self):
         '''
         Tests that flushing the memtable to disk populates the index.
         '''
@@ -441,7 +449,7 @@ class TestDatabase(unittest.TestCase):
         self.assertTrue(db.index.contains('jkl'))
         self.assertTrue(db.index.contains('vwx'))
 
-    def test_memtable_writes_most_recent_keys(self):
+    def test_flush_memtable_to_disk_writes_most_recent_keys(self):
         '''
         Tests that the memtable only flushes the most recent values of 
         keys to disk.
@@ -466,7 +474,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(lines[1], 'def,DEF\n')
         self.assertEqual(lines[2], 'ghi,GHI\n')
 
-    def test_flush_memtable_stores_segment_in_index(self):
+    def test_flush_memtable_to_disk_stores_segment_in_index(self):
         '''
         Tests that flushing the memtable to disk populates the index and stores
         the current segments within each node.s
@@ -498,7 +506,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(segment1, 'test_file-1')
         self.assertEqual(segment2, 'test_file-2')
 
-    def test_flush_memtable_stores_correct_index_offsets(self):
+    def test_flush_memtable_to_disk_stores_correct_index_offsets(self):
         '''
         Tests that flushing the memtable to disk stores the correct
         offsets into disk in the index.
@@ -729,7 +737,7 @@ class TestDatabase(unittest.TestCase):
         self.assertFalse(db.index.contains('yellow'))
 
     # compaction
-    def test_delete_one_key_from_file(self):
+    def test_delete_keys_from_segment_deletes_one_key_from_file(self):
         '''
         Tests that individual keys can be deleted from a given segment file.
         '''
@@ -749,7 +757,7 @@ class TestDatabase(unittest.TestCase):
 
         self.assertTrue(altered_lines == ['red,1\n', 'blue,2\n', 'yellow,4\n', ])
 
-    def test_delete_multiple_keys_from_file(self):
+    def test_delete_keys_from_segment_deletes_multiple_keys_from_file(self):
         '''
         Tests that individual keys can be deleted from a given segment file.
         '''
@@ -769,7 +777,7 @@ class TestDatabase(unittest.TestCase):
 
         self.assertTrue(altered_lines == ['red,1\n', 'yellow,4\n', ])
 
-    def test_delete_keys_from_segments_one_key(self):
+    def test_delete_keys_from_segments_deletes_one_key(self):
         '''
         Tests that delete_keys_from_segments deletes a single key 
         from multiple segments.
@@ -796,7 +804,7 @@ class TestDatabase(unittest.TestCase):
                 l = s.readlines()
                 self.assertEqual(l, expected_lines)
 
-    def test_delete_keys_from_segments_many_keys(self):
+    def test_delete_keys_from_segments_deletes_many_keys(self):
         '''
             Tests that delete_keys_from_segments deletes a single key
             from multiple segments.
@@ -822,9 +830,9 @@ class TestDatabase(unittest.TestCase):
                 l = s.readlines()
                 self.assertEqual(l, expected_lines)
 
-    def test_new_compact_one_key_to_drop(self):
+    def test_compact_dropes_one_key(self):
         '''
-        Tets the new compaction algorithm
+        Tests that the compaction algorithm can drop a single redundant key from segments on disk.
         '''
         # Prepare the values on disk
         lines = ['red,1\n', 'blue,2\n', 'green,3\n', 'yellow,4\n',]
@@ -853,9 +861,10 @@ class TestDatabase(unittest.TestCase):
                 l = s.readlines()
                 self.assertEqual(l, expected_lines)
 
-    def test_new_compact_multiple_keys_to_drop(self):
+    def test_compact_drops_multiple_keys(self):
         '''
-        Tets the new compaction algorithm
+        Tests that the compaction algorithm can drop multiple redundant keys
+        from segments on disk.
         '''
         # Prepare the values on disk
         lines = ['red,1\n', 'blue,2\n', 'green,3\n', 'yellow,4\n', ]
@@ -886,7 +895,7 @@ class TestDatabase(unittest.TestCase):
                 l = s.readlines()
                 self.assertEqual(l, expected_lines)
 
-    def test_db_set_calls_compaction(self):
+    def test_db_set_calls_compaction_algorithm(self):
         '''
         Tests that crossing the threshold with db set calls the compaction algorithm
         '''

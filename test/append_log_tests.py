@@ -8,7 +8,7 @@ class AppendLogTests(unittest.TestCase):
     def tearDown(self):
         AppendLog.instance(FILENAME).clear()
 
-    def test_write_value(self):
+    def test_write_writes_value_to_disk(self):
         '''
         Tests that a single value can be written to disk.
         '''
@@ -21,7 +21,7 @@ class AppendLogTests(unittest.TestCase):
         
         self.assertEqual(output, input)
 
-    def test_write_multiple_values(self):
+    def test_write_writes_multiple_values_to_disk(self):
         '''
         Tests that mutliple values can be written to disk.
         '''
@@ -37,7 +37,7 @@ class AppendLogTests(unittest.TestCase):
         self.assertEqual(output1, input[0])
         self.assertEqual(output2, input[1])
 
-    def test_clear(self):
+    def test_clear_clears_file_on_disk(self):
         '''
         Tests that the disk contents can be cleared.
         '''

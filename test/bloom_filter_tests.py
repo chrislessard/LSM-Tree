@@ -2,7 +2,7 @@ import unittest
 from src.bloom_filter import BloomFilter
 
 class BloomFilterTests(unittest.TestCase):
-    def test_add_item(self):
+    def test_add_item_one_item(self):
         '''
         Tests that an item can be added to the Bloom Filter.
         '''
@@ -11,7 +11,7 @@ class BloomFilterTests(unittest.TestCase):
 
         self.assertTrue(bf.check('christian'))
 
-    def test_add_items(self):
+    def test_add_item_multiple_items(self):
         '''
         Tests that multiple items can be added to the Bloom Filter.
         '''
@@ -26,7 +26,7 @@ class BloomFilterTests(unittest.TestCase):
         self.assertTrue(bf.check('debra'))
         self.assertTrue(bf.check('charles-adrian'))
 
-    def test_add_item_different_prob(self):
+    def test_add_item_different_probability_one_item(self):
         '''
         Tests that an item can be added to the Bloom Filter with
         different false positive probabilities.
@@ -46,7 +46,7 @@ class BloomFilterTests(unittest.TestCase):
 
         self.assertTrue(bf.check('christian'))
 
-    def test_add_items_different_prob(self):
+    def test_add_item_different_probability_multiple_items(self):
         '''
         Tests that multiple items can be added to the Bloom Filter with
         different false positive probabilities.
@@ -84,7 +84,7 @@ class BloomFilterTests(unittest.TestCase):
         self.assertTrue(bf.check('debra'))
         self.assertTrue(bf.check('charles-adrian'))
 
-    def test_response_for_any_key(self):
+    def test_check_gives_response_regardless_of_key(self):
         '''
         Tests that the Bloom Filter will give a response
         no matter the key. We cannot test any further, as we don't
@@ -101,7 +101,7 @@ class BloomFilterTests(unittest.TestCase):
         self.assertTrue(r1)
         self.assertTrue(r2)
 
-    def test_bf_calculate_correct_num_hases(self):
+    def test_num_hashes_calculates_the_correct_number_of_hash_functions(self):
         '''
         Tests that the bloom filter calculates the correct number
         of hash functions to use.
@@ -121,7 +121,7 @@ class BloomFilterTests(unittest.TestCase):
         bf = BloomFilter(num_items, prob)
         self.assertEqual(bf.num_hash_fns, 5)
 
-    def test_bf_calculate_correct_bit_array_size(self):
+    def test_bit_array_size_calculates_correct_array_size(self):
         '''
             Tests that the bloom filter calculates the correct number
             of hash functions to use.
