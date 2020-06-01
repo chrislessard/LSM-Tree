@@ -103,6 +103,7 @@ class LSMTree():
 
         return self.search_all_segments(key)
 
+    # Configuration methods
     def set_threshold(self, threshold):
         ''' (self, int) -> None
         Sets the threshold - the point at which a new segment is created
