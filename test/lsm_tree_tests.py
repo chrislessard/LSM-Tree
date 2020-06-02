@@ -290,6 +290,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(metadata['segments'], segments)
         self.assertEqual(metadata['bf_false_pos'], 0.5)
         self.assertEqual(metadata['bf_num_items'], 100)
+        self.assertIsNotNone(metadata['index'])
 
     def test_load_metadata_loads_segments_at_init_time(self):
         '''
@@ -304,6 +305,7 @@ class TestDatabase(unittest.TestCase):
         db.db_set('daniel', 'lessard')
         db.bf_false_pos_prob = 0.5
         db.bf_num_items = 100
+        db.index.add('john', offset=5, segment='segment-1')
         db.save_metadata() # pickle will be saved
         del db
 
@@ -314,6 +316,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.current_segment, segments[-1])
         self.assertEqual(db.bf_false_pos_prob, 0.5)
         self.assertEqual(db.bf_num_items, 100)
+        self.assertTrue(db.index.contains('john'))
 
     def test_restore_memtable_loads_memtable_from_wal(self):
         '''

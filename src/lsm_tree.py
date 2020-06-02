@@ -157,6 +157,7 @@ class LSMTree():
                 self.bloom_filter = metadata['bloom_filter']
                 self.bf_num_items = metadata['bf_num_items']
                 self.bf_false_pos_prob = metadata['bf_false_pos']
+                self.index = metadata['index']
 
     def save_metadata(self):
         ''' (self) -> None
@@ -167,7 +168,8 @@ class LSMTree():
             'segments': self.segments,
             'bloom_filter': self.bloom_filter,
             'bf_num_items': self.bf_num_items,
-            'bf_false_pos': self.bf_false_pos_prob
+            'bf_false_pos': self.bf_false_pos_prob,
+            'index': self.index
         }
 
         with open(self.metadata_path(), 'wb') as s:
