@@ -12,10 +12,12 @@ def main():
         ['Commands: ', 'Explanation'],
         ['store {key} {data}', 'Store the key value vair in the DB'],
         ['get {key}', 'Retrieve the value for key. Returns None if it doesnt exist'],
-        ['set_threshold {number of bytes}', 'Set the threshold for the size of the memtable'],
+        ['\n\tConfiguration:', ''],
+        ['set_threshold {number of bytes}', 'Set the threshold for the size of the memtable in bytes'],
         ['set_sparsity {value}', 'Set the sparsity factor for the DBs index'],
-        ['set_bf_num_items {items}', 'Set the number of expected items for the Bloom Filter. Warning: this overrides it.'],
+        ['set_bf_num_items {items}', 'Set the number of expected items to be stored in the Bloom Filter. Warning: this overrides it.'],
         ['set_bf_false_pos_prob {probability}', 'Set the desired false positive probability for the Bloom Filter. Warning: this overrides it.'],
+        ['', ''],
         ['help', 'Print the usage message'],
         ['exit', 'Quit the program. Your instance will be saved to disk.']
     ]
@@ -37,28 +39,31 @@ def main():
             key = cmd[1]
             print('Key "' + key + '" has value:', db.db_get(key))
         elif cmd[0] == 'set_threshold':
-            threshold = int(cmd[1])
-            print('\nSetting new threshold ...')
-            db.set_threshold(threshold)
-            print('Done\n')
+            arg = int(cmd[1])
+
+            print('\nSet new threshold to {}'.format(arg))
+            db.set_threshold(arg)
         elif cmd[0] == 'set_sparsity':
-            sparsity = int(cmd[1])
-            db.set_sparsity_factor(sparsity)
-            print('\nSet new sparsity factor.\n')
+            arg = int(cmd[1])
+
+            db.set_sparsity_factor(arg)
+            print('\nSet new sparsity factor to {}'.format(cmd[1]))
         elif cmd[0] == 'set_bf_num_items':
             arg = int(cmd[1])
+
             if arg <= 0:
                 print("Invalid option, plase choose a value greater than 0")
             else:
                 db.set_bloom_filter_num_items(arg)
-                print('Set the BloomFilters expected num items to', arg)
+                print('Set the BloomFilters expected num items to {}'.format(arg))
         elif cmd[0] == 'set_bf_false_pos_prob':
             arg = float(cmd[1])
+
             if arg < 0 or arg > 1:
                 print('Invalid option. Please choose a probability between 0 and 1.')
             else:
-                db.set_bloom_filter_false_pos_prob(cmd[1])
-                print('Set the BloomFilters desired probability of a false positive to', float(cmd[1]))
+                db.set_bloom_filter_false_pos_prob(arg)
+                print('Set the BloomFilters desired probability of a false positive to', arg)
         elif cmd[0] == 'help':
             for row in usage_msg:
                 print("\t{: <40} {: <10}".format(*row))
