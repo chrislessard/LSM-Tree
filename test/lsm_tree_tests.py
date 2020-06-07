@@ -228,6 +228,38 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(db.memtable.total_bytes, 6)
         self.assertEqual(db.current_segment, 'test_file-2')
 
+    def test_search_segment_key_present(self):
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        pairs = [
+            ('chris', 'lessard'),
+            ('daniel', 'lessard'),
+            ('charles', 'lessard'),
+            ('adrian', 'lessard')
+        ]
+        with open(TEST_BASEPATH + TEST_FILENAME, 'w') as s:
+            for pair in pairs:
+                s.write(pair[0] + ',' + pair[1] + '\n')
+
+        db.segments = [TEST_FILENAME]
+        
+        self.assertEqual(db.search_segment('daniel', TEST_FILENAME), 'lessard')
+
+    def test_search_segment_key_present(self):
+        db = LSMTree(TEST_FILENAME, TEST_BASEPATH, BKUP_NAME)
+        pairs = [
+            ('chris', 'lessard'),
+            ('daniel', 'lessard'),
+            ('charles', 'lessard'),
+            ('adrian', 'lessard')
+        ]
+        with open(TEST_BASEPATH + TEST_FILENAME, 'w') as s:
+            for pair in pairs:
+                s.write(pair[0] + ',' + pair[1] + '\n')
+
+        db.segments = [TEST_FILENAME]
+        
+        self.assertEqual(db.search_segment('steve', TEST_FILENAME), None)
+
     # Merging algorithm
     def test_merge_merges_two_segments(self):
         '''

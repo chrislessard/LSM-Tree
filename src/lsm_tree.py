@@ -137,11 +137,20 @@ class LSMTree():
         while len(segments):
             segment = segments.pop()
 
-            with open(self.segment_path(segment), 'r') as s:
-                for line in s:
-                    k, v = line.split(',')
-                    if k == key:
-                        return v.strip()
+            value = self.search_segment(key, segment)
+            if value != None:
+                return value
+
+    def search_segment(self, key, segment_name):
+        ''' (self, str) -> str
+        Returns the value associated with key in the segment represented
+        by segment_name, if it exists. Otherwise return None.
+        '''
+        with open(self.segment_path(segment_name), 'r') as s:
+            for line in s:
+                k, v = line.split(',')
+                if k == key:
+                    return v.strip()
 
     # Metadata and initialization helpers
     def load_metadata(self):
