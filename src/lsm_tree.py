@@ -30,7 +30,8 @@ class LSMTree():
         # Bloom Filter
         self.bf_num_items = 1000000
         self.bf_false_pos_prob = 0.2
-        self.bloom_filter = BloomFilter(self.bf_num_items, self.bf_false_pos_prob)
+        self.bloom_filter = BloomFilter(
+            self.bf_num_items, self.bf_false_pos_prob)
 
         # Create the segments directory
         if not (Path(segments_directory).exists() and Path(segments_directory).is_dir):
@@ -147,10 +148,19 @@ class LSMTree():
         by segment_name, if it exists. Otherwise return None.
         '''
         with open(self.segment_path(segment_name), 'r') as s:
-            for line in s:
-                k, v = line.split(',')
+            pairs = [line.strip() for line in s]
+
+            while len(pairs):
+                ptr = (len(pairs) - 1) // 2
+                k, v = pairs[ptr].split(',')
+
                 if k == key:
-                    return v.strip()
+                    return v
+
+                if key < k:
+                    pairs = pairs[0:ptr]
+                else:
+                    pairs = pairs[ptr+1:]
 
     # Metadata and initialization helpers
     def load_metadata(self):
