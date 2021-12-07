@@ -1,7 +1,5 @@
 # LSMTree
 
-To read an old article that goes into the process behind developing this project, visit [the link here](https://www.notion.so/Implementing-a-basic-LSMTree-363b7bbd98674291ba80edd1d61d8a0a). I also wrote an article about compaction in LSM-Trees [here](https://medium.com/@chris.lessard.96/lsm-trees-technical-optimizations-for-compaction-and-disk-reclamation-66960631714e).
-
 ## Dependencies
 
 You'll need python3 in order to run this code.
