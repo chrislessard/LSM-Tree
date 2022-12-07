@@ -1,3 +1,6 @@
+import os
+
+
 class Singleton:
     def __init__(self, decorated):
         self._decorated = decorated
@@ -25,6 +28,7 @@ class AppendLog:
         try:
             self.stream.write(val)
             self.stream.flush()
+            os.sync()
         except IOError:
             print("The file stream isn't currently open")
 
